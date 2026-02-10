@@ -120,16 +120,11 @@ const App = () => {
       const internals = d.internals || [];
       const externals = d.externals || [];
 
-      // Internal examiners: just the name
-      const internalText = internals
-        .map((ie) => ie.name)
-        .filter(Boolean)
-        .join("\n") || "";
-
-      const maxRows = Math.max(externals.length, 1);
+      const maxRows = Math.max(externals.length, internals.length, 1);
 
       for (let r = 0; r < maxRows; r++) {
         const ext = externals[r] || {};
+        const int = internals[r] || {};
         const isFirstRow = r === 0;
 
         wsData.push([
@@ -138,7 +133,7 @@ const App = () => {
           isFirstRow ? (d.subjectCode || "") : "",
           isFirstRow ? (d.semester ? `Semester ${d.semester}` : "") : "",
           isFirstRow ? (d.studentsEnrolled || "") : "",
-          isFirstRow ? internalText : "",
+          int.name || "",
           ext.name || "",
           ext.address || "",
           ext.contact || "",
@@ -181,7 +176,8 @@ const App = () => {
     for (let i = 0; i < subjectCount; i++) {
       const d = subjectsData[i] || {};
       const externals = d.externals || [];
-      const maxRows = Math.max(externals.length, 1);
+      const internals = d.internals || [];
+      const maxRows = Math.max(externals.length, internals.length, 1);
 
       if (maxRows > 1) {
         // Merge Sl. No. (column 0)
@@ -194,8 +190,7 @@ const App = () => {
         merges.push({ s: { r: currentRow, c: 3 }, e: { r: currentRow + maxRows - 1, c: 3 } });
         // Merge No. of Students (column 4)
         merges.push({ s: { r: currentRow, c: 4 }, e: { r: currentRow + maxRows - 1, c: 4 } });
-        // Merge Internal Examiners (column 5)
-        merges.push({ s: { r: currentRow, c: 5 }, e: { r: currentRow + maxRows - 1, c: 5 } });
+        // DO NOT merge Internal Examiners (column 5) - each row has its own internal examiner
       }
       currentRow += maxRows;
     }
