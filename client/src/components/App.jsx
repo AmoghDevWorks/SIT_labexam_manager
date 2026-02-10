@@ -66,9 +66,21 @@ const App = () => {
         }
         if (!external.contact || external.contact.trim() === "") {
           errors.push(`${subjectLabel} - External Examiner #${idx + 1}: Contact Number is required`);
+        } else {
+          // Validate phone number (must be exactly 10 digits)
+          const phoneDigits = external.contact.replace(/\D/g, '');
+          if (phoneDigits.length !== 10) {
+            errors.push(`${subjectLabel} - External Examiner #${idx + 1}: Contact Number must be exactly 10 digits`);
+          }
         }
         if (!external.email || external.email.trim() === "") {
           errors.push(`${subjectLabel} - External Examiner #${idx + 1}: Email ID is required`);
+        } else {
+          // Validate email format
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(external.email.trim())) {
+            errors.push(`${subjectLabel} - External Examiner #${idx + 1}: Invalid email format`);
+          }
         }
         if (!external.verification || external.verification.trim() === "") {
           errors.push(`${subjectLabel} - External Examiner #${idx + 1}: Verification is required`);
@@ -256,16 +268,38 @@ const App = () => {
 
           <div className="flex items-center gap-4 ml-auto flex-wrap">
             <span className="text-xs font-semibold text-[#6b85a3] uppercase tracking-wider whitespace-nowrap font-[Syne,sans-serif]">
-              Subjects
+              Total Subjects
             </span>
-            <input
-              type="number"
-              min="1"
-              value={inputVal}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              className="w-[100px] px-4 py-3 text-center text-[22px] font-bold text-[#0f1f3d] bg-sky-50 border-2 border-[#00c9a7]/25 rounded-xl outline-none transition-all duration-200 focus:border-[#00c9a7] focus:shadow-[0_0_0_4px_rgba(0,201,167,0.15)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-[Syne,sans-serif]"
-            />
+            <div className="flex items-center border-2 border-[#00c9a7]/25 rounded-xl overflow-hidden bg-sky-50">
+              <button
+                type="button"
+                onClick={() => {
+                  const num = Math.max(1, parseInt(inputVal, 10) || 0);
+                  setInputVal(String(Math.max(1, num - 1)));
+                }}
+                className="w-10 h-12 flex items-center justify-center text-[#00c9a7] hover:bg-[#00c9a7]/10 transition-colors text-xl font-bold"
+              >
+                −
+              </button>
+              <input
+                type="number"
+                min="1"
+                value={inputVal}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                className="w-[60px] px-2 text-center text-[22px] font-bold text-[#0f1f3d] bg-transparent outline-none transition-all duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-[Syne,sans-serif]"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const num = parseInt(inputVal, 10) || 0;
+                  setInputVal(String(num + 1));
+                }}
+                className="w-10 h-12 flex items-center justify-center text-[#00c9a7] hover:bg-[#00c9a7]/10 transition-colors text-xl font-bold"
+              >
+                +
+              </button>
+            </div>
           </div>
         </div>
 

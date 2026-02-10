@@ -91,8 +91,8 @@ const VerificationRadio = ({ value, onChange, name }) => (
 /* ─────────────────────────────────────────────
    Count Stepper
 ───────────────────────────────────────────── */
-const CountStepper = ({ label, value, onChange }) => {
-  const num = parseInt(value, 10) || 0;
+const CountStepper = ({ label, value, onChange, min = 0 }) => {
+  const num = parseInt(value, 10) || min;
   return (
     <div className="flex items-center gap-3">
       <span className="text-[11px] font-bold tracking-[0.08em] uppercase text-[#6b85a3] font-[Syne,sans-serif] whitespace-nowrap">
@@ -101,20 +101,20 @@ const CountStepper = ({ label, value, onChange }) => {
       <div className="flex items-center border border-[#00c9a7]/25 rounded-xl overflow-hidden bg-sky-50">
         <button
           type="button"
-          onClick={() => onChange(String(Math.max(0, num - 1)))}
+          onClick={() => onChange(String(Math.max(min, num - 1)))}
           className="w-8 h-8 flex items-center justify-center text-[#00c9a7] hover:bg-[#00c9a7]/10 transition-colors text-lg font-bold"
         >
           −
         </button>
         <input
           type="number"
-          min="0"
+          min={min}
           value={value}
           onChange={(e) => {
             const v = e.target.value;
             if (v === "" || /^\d+$/.test(v)) onChange(v);
           }}
-          onBlur={() => { if (!value || parseInt(value, 10) < 0) onChange("0"); }}
+          onBlur={() => { if (!value || parseInt(value, 10) < min) onChange(String(min)); }}
           className="w-10 text-center text-sm font-bold text-[#1a2e4a] bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         />
         <button
@@ -173,7 +173,19 @@ const ExternalExaminerCard = ({ index, data, onChange, subjectId }) => {
         </div>
         <div>
           <Label required>Contact Number</Label>
-          <Input type="tel" placeholder="+91 98765 43210" value={data.contact} onChange={(e) => field("contact")(e.target.value)} required />
+          <Input 
+            type="tel" 
+            placeholder="+91 98765 43210" 
+            value={data.contact} 
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+              if (value.length <= 10) {
+                field("contact")(value);
+              }
+            }}
+            maxLength={10}
+            required 
+          />
         </div>
         <div className="sm:col-span-2">
           <Label required>Address</Label>
@@ -227,9 +239,9 @@ const Subject = ({ index, onChange }) => {
   const [semester, setSemester] = useState("");
   const [studentsEnrolled, setStudentsEnrolled] = useState("");
 
-  const [examinerCount, setExaminerCount] = useState("0");
-  const [internals, setInternals] = useState([]);
-  const [externals, setExternals] = useState([]);
+  const [examinerCount, setExaminerCount] = useState("1");
+  const [internals, setInternals] = useState([blankInternal()]);
+  const [externals, setExternals] = useState([blankExternal()]);
 
   const handleExaminerCount = (val) => {
     setExaminerCount(val);
@@ -323,39 +335,27 @@ const Subject = ({ index, onChange }) => {
           <div className="mb-5">
             <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
               <SectionHeading icon="👥" title="Examiners" subtitle="Internal and External examiners (equal count)" />
-              <CountStepper label="Count" value={examinerCount} onChange={handleExaminerCount} />
+              <CountStepper label="Count" value={examinerCount} onChange={handleExaminerCount} min={1} />
             </div>
 
             {/* Internal Examiners */}
             <div className="mb-6">
               <h4 className="text-[12px] font-bold text-[#1a2e4a] mb-3 font-[Syne,sans-serif]">🎓 Internal Examiners</h4>
-              {internals.length === 0 ? (
-                <div className="text-center py-6 text-[#6b85a3]/50 text-xs font-medium border border-dashed border-[#00c9a7]/20 rounded-xl bg-sky-50/40">
-                  No internal examiners added — use the stepper above
-                </div>
-              ) : (
-                <div className="flex flex-col gap-5">
-                  {internals.map((examiner, i) => (
-                    <InternalExaminerCard key={i} index={i} data={examiner} onChange={updateInternal} subjectId={id} />
-                  ))}
-                </div>
-              )}
+              <div className="flex flex-col gap-5">
+                {internals.map((examiner, i) => (
+                  <InternalExaminerCard key={i} index={i} data={examiner} onChange={updateInternal} subjectId={id} />
+                ))}
+              </div>
             </div>
 
             {/* External Examiners */}
             <div>
               <h4 className="text-[12px] font-bold text-[#1a2e4a] mb-3 font-[Syne,sans-serif]">🏛️ External Examiners</h4>
-              {externals.length === 0 ? (
-                <div className="text-center py-6 text-[#6b85a3]/50 text-xs font-medium border border-dashed border-[#00c9a7]/20 rounded-xl bg-sky-50/40">
-                  No external examiners added — use the stepper above
-                </div>
-              ) : (
-                <div className="flex flex-col gap-5">
-                  {externals.map((examiner, i) => (
-                    <ExternalExaminerCard key={i} index={i} data={examiner} onChange={updateExternal} subjectId={id} />
-                  ))}
-                </div>
-              )}
+              <div className="flex flex-col gap-5">
+                {externals.map((examiner, i) => (
+                  <ExternalExaminerCard key={i} index={i} data={examiner} onChange={updateExternal} subjectId={id} />
+                ))}
+              </div>
             </div>
           </div>
 
