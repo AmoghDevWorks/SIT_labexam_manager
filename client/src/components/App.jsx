@@ -266,12 +266,15 @@ const App = () => {
         format: 'a4'
       });
       
+      // A4 landscape dimensions: 297mm x 210mm
+      const pageWidth = doc.internal.pageSize.getWidth(); // 297mm
+      const pageHeight = doc.internal.pageSize.getHeight(); // 210mm
+      
       // Add title
-      doc.setFontSize(12);
+      doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
       const title = 'Panel of Examiners for ODD Semester (2025-2026) - December 2025 - January 2026';
-      const pageWidth = doc.internal.pageSize.getWidth();
-      doc.text(title, pageWidth / 2, 15, { align: 'center' });
+      doc.text(title, pageWidth / 2, 12, { align: 'center' });
 
       // Prepare table data with rowSpan information
       const tableData = [];
@@ -294,7 +297,7 @@ const App = () => {
               { content: String(slNo), rowSpan: maxRows, styles: { valign: 'middle', halign: 'center' } },
               { content: d.subjectName || "", rowSpan: maxRows, styles: { valign: 'middle', halign: 'left' } },
               { content: d.subjectCode || "", rowSpan: maxRows, styles: { valign: 'middle', halign: 'center' } },
-              { content: d.semester ? `Semester ${d.semester}` : "", rowSpan: maxRows, styles: { valign: 'middle', halign: 'center' } },
+              { content: d.semester ? `Sem ${d.semester}` : "", rowSpan: maxRows, styles: { valign: 'middle', halign: 'center' } },
               { content: String(d.studentsEnrolled || ""), rowSpan: maxRows, styles: { valign: 'middle', halign: 'center' } },
               { content: int.name || "", styles: { halign: 'left' } },
               { content: ext.name || "", styles: { halign: 'left' } },
@@ -319,32 +322,33 @@ const App = () => {
       }
 
       // Create table with autoTable
+      // Total available width = 297mm - margins (6mm left + 6mm right) = 285mm
       autoTable(doc, {
         head: [
           [
-            { content: '', colSpan: 6, styles: { halign: 'center', fillColor: [255, 255, 255], textColor: [0, 0, 0] } },
-            { content: 'External Examiner', colSpan: 5, styles: { halign: 'center', fillColor: [220, 230, 240], textColor: [0, 0, 0], fontStyle: 'bold' } }
+            { content: '', colSpan: 6, styles: { halign: 'center', fillColor: [255, 255, 255], textColor: [0, 0, 0], lineWidth: 0.1 } },
+            { content: 'External Examiner', colSpan: 5, styles: { halign: 'center', fillColor: [220, 230, 240], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.1 } }
           ],
           [
             { content: 'Sl No', styles: { halign: 'center' } },
             { content: 'Subject', styles: { halign: 'center' } },
             { content: 'Subject Code', styles: { halign: 'center' } },
-            { content: 'Semester', styles: { halign: 'center' } },
-            { content: 'Number of Students', styles: { halign: 'center' } },
+            { content: 'Sem', styles: { halign: 'center' } },
+            { content: 'No. of Students', styles: { halign: 'center' } },
             { content: 'Internal Examiner', styles: { halign: 'center' } },
             { content: 'Name', styles: { halign: 'center' } },
             { content: 'Address', styles: { halign: 'center' } },
-            { content: 'Contact Number', styles: { halign: 'center' } },
+            { content: 'Contact No.', styles: { halign: 'center' } },
             { content: 'Email ID', styles: { halign: 'center' } },
             { content: 'Permission to use already existing Question Paper with same code (Yes / No)', styles: { halign: 'center' } }
           ]
         ],
         body: tableData,
-        startY: 22,
+        startY: 18,
         theme: 'grid',
         styles: {
-          fontSize: 7,
-          cellPadding: 1.5,
+          fontSize: 6.5,
+          cellPadding: 1.2,
           halign: 'center',
           valign: 'middle',
           lineColor: [0, 0, 0],
@@ -356,30 +360,42 @@ const App = () => {
           textColor: [255, 255, 255],
           fontStyle: 'bold',
           halign: 'center',
-          fontSize: 7,
+          fontSize: 6.5,
+          cellPadding: 1.5,
         },
         columnStyles: {
-          0: { cellWidth: 10, halign: 'center' },  // Sl No
-          1: { cellWidth: 24, halign: 'left' },    // Subject
-          2: { cellWidth: 16, halign: 'center' },  // Subject Code
-          3: { cellWidth: 16, halign: 'center' },  // Semester
-          4: { cellWidth: 18, halign: 'center' },  // Number of Students
-          5: { cellWidth: 26, halign: 'left' },    // Internal Examiner
-          6: { cellWidth: 24, halign: 'left' },    // External Name
-          7: { cellWidth: 28, halign: 'left' },    // Address
-          8: { cellWidth: 20, halign: 'center' },  // Contact
-          9: { cellWidth: 26, halign: 'left' },    // Email
-          10: { cellWidth: 18, halign: 'center' }, // Permission
+          0: { cellWidth: 10, halign: 'center' },   // Sl No - 10mm
+          1: { cellWidth: 30, halign: 'left' },     // Subject - 30mm
+          2: { cellWidth: 18, halign: 'center' },   // Subject Code - 18mm
+          3: { cellWidth: 12, halign: 'center' },   // Semester - 12mm
+          4: { cellWidth: 15, halign: 'center' },   // Number of Students - 15mm
+          5: { cellWidth: 32, halign: 'left' },     // Internal Examiner - 32mm
+          6: { cellWidth: 32, halign: 'left' },     // External Name - 32mm
+          7: { cellWidth: 45, halign: 'left' },     // Address - 45mm
+          8: { cellWidth: 20, halign: 'center' },   // Contact - 20mm
+          9: { cellWidth: 38, halign: 'left' },     // Email - 38mm
+          10: { cellWidth: 23, halign: 'center' },  // Permission - 23mm
         },
-        margin: { top: 22, left: 8, right: 8, bottom: 10 },
+        // Total: 10+30+18+12+15+32+32+45+20+38+23 = 275mm (fits in 285mm available)
+        margin: { top: 18, left: 6, right: 6, bottom: 10 },
         didDrawPage: function(data) {
           // Footer
-          doc.setFontSize(8);
+          doc.setFontSize(7);
           doc.setFont('helvetica', 'normal');
           doc.text(
             'Siddaganga Institute of Technology',
             data.settings.margin.left,
-            doc.internal.pageSize.getHeight() - 5
+            pageHeight - 5
+          );
+          
+          // Page number
+          const pageCount = doc.internal.getNumberOfPages();
+          const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
+          doc.text(
+            `Page ${currentPage} of ${pageCount}`,
+            pageWidth - 6,
+            pageHeight - 5,
+            { align: 'right' }
           );
         }
       });
