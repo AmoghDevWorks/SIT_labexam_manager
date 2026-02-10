@@ -1,26 +1,177 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import Subject from "./Subject";
 import SITLOGO from '../assets/sit.png';
+import * as XLSX from 'xlsx';
 
 const App = () => {
-  // Store as string so backspace/clearing works naturally
   const [inputVal, setInputVal] = useState("1");
-
   const subjectCount = Math.max(1, parseInt(inputVal, 10) || 0);
+
+  // Store all subjects' data keyed by index
+  const [subjectsData, setSubjectsData] = useState({});
 
   const handleChange = (e) => {
     const raw = e.target.value;
-    // Allow empty string (so backspace clears the field)
-    if (raw === "" || /^\d+$/.test(raw)) {
-      setInputVal(raw);
-    }
+    if (raw === "" || /^\d+$/.test(raw)) setInputVal(raw);
   };
 
   const handleBlur = () => {
-    // Snap back to at least "1" if the field is empty or 0 on blur
-    if (!inputVal || parseInt(inputVal, 10) < 1) {
-      setInputVal("1");
+    if (!inputVal || parseInt(inputVal, 10) < 1) setInputVal("1");
+  };
+
+  // Called by each Subject whenever its data changes
+  const handleSubjectChange = useCallback((index, data) => {
+    setSubjectsData((prev) => ({ ...prev, [index]: data }));
+  }, []);
+
+  // ── Excel Export ──────────────────────────────────────────
+  const downloadExcel = () => {
+    const wb = XLSX.utils.book_new();
+    const wsData = [];
+
+    // Title row
+    wsData.push([
+      "Panel of Examiners for ODD Semester (2025-2026) - December 2025 - January 2026",
+      "", "", "", "", "", "", "", "", "", ""
+    ]);
+
+    // Subtitle row - "External Examiner" should only appear above the external examiner columns
+    wsData.push([
+      "", "", "", "", "", "",
+      "External Examiner",
+      "", "", "", ""
+    ]);
+
+    // Header row
+    wsData.push([
+      "Sl No",
+      "Subject",
+      "Subject Code",
+      "Semester",
+      "Number of Students",
+      "Internal Examiner",
+      "Name",
+      "Address",
+      "Contact Number(s)",
+      "Email ID",
+      "Permission to use already existing Question Paper with same code (Yes / No)",
+    ]);
+
+    let slNo = 1;
+
+    for (let i = 0; i < subjectCount; i++) {
+      const d = subjectsData[i] || {};
+      const internals = d.internals || [];
+      const externals = d.externals || [];
+
+      // Internal examiners: combine name + verification into one multi-line cell
+      const internalText = internals
+        .map((ie) => [ie.name, ie.verification ? `(Verification: ${ie.verification})` : ""].filter(Boolean).join(" "))
+        .filter(Boolean)
+        .join("\n") || "";
+
+      const maxRows = Math.max(externals.length, 1);
+
+      for (let r = 0; r < maxRows; r++) {
+        const ext = externals[r] || {};
+        const isFirstRow = r === 0;
+
+        wsData.push([
+          isFirstRow ? slNo : "",
+          isFirstRow ? (d.subjectName || "") : "",
+          isFirstRow ? (d.subjectCode || "") : "",
+          isFirstRow ? (d.semester ? `Semester ${d.semester}` : "") : "",
+          isFirstRow ? (d.studentsEnrolled || "") : "",
+          isFirstRow ? internalText : "",
+          ext.name || "",
+          ext.address || "",
+          ext.contact || "",
+          ext.email || "",
+          ext.verification || "",
+        ]);
+      }
+
+      slNo++;
     }
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Column widths
+    ws["!cols"] = [
+      { wch: 8 },
+      { wch: 12 },
+      { wch: 14 },
+      { wch: 12 },
+      { wch: 20 },
+      { wch: 28 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 18 },
+      { wch: 12 },
+      { wch: 38 },
+    ];
+
+    // Merge cells array
+    const merges = [];
+    
+    // Merge title row across all 11 columns (A1:K1)
+    merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: 10 } });
+    
+    // Merge "External Examiner" subtitle across columns 6-10 (G2:K2) - Name, Address, Contact, Email, Permission
+    merges.push({ s: { r: 1, c: 6 }, e: { r: 1, c: 10 } });
+
+    // Merge cells for each subject (for repeated rows)
+    let currentRow = 3; // Start after headers
+    for (let i = 0; i < subjectCount; i++) {
+      const d = subjectsData[i] || {};
+      const externals = d.externals || [];
+      const maxRows = Math.max(externals.length, 1);
+
+      if (maxRows > 1) {
+        // Merge Sl. No. (column 0)
+        merges.push({ s: { r: currentRow, c: 0 }, e: { r: currentRow + maxRows - 1, c: 0 } });
+        // Merge Subject (column 1)
+        merges.push({ s: { r: currentRow, c: 1 }, e: { r: currentRow + maxRows - 1, c: 1 } });
+        // Merge Sub Code (column 2)
+        merges.push({ s: { r: currentRow, c: 2 }, e: { r: currentRow + maxRows - 1, c: 2 } });
+        // Merge Semester (column 3)
+        merges.push({ s: { r: currentRow, c: 3 }, e: { r: currentRow + maxRows - 1, c: 3 } });
+        // Merge No. of Students (column 4)
+        merges.push({ s: { r: currentRow, c: 4 }, e: { r: currentRow + maxRows - 1, c: 4 } });
+        // Merge Internal Examiners (column 5)
+        merges.push({ s: { r: currentRow, c: 5 }, e: { r: currentRow + maxRows - 1, c: 5 } });
+      }
+      currentRow += maxRows;
+    }
+
+    ws["!merges"] = merges;
+
+    // Apply center alignment and borders to all cells
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+        if (!ws[cellAddress]) continue;
+
+        ws[cellAddress].s = {
+          alignment: {
+            horizontal: "center",
+            vertical: "center",
+            wrapText: true
+          },
+          border: {
+            top: { style: "thin", color: { rgb: "000000" } },
+            bottom: { style: "thin", color: { rgb: "000000" } },
+            left: { style: "thin", color: { rgb: "000000" } },
+            right: { style: "thin", color: { rgb: "000000" } }
+          },
+          font: R === 0 || R === 1 ? { bold: true, sz: 12 } : R === 2 ? { bold: true } : {}
+        };
+      }
+    }
+
+    XLSX.utils.book_append_sheet(wb, ws, "Panel of Examiners");
+    XLSX.writeFile(wb, "Panel_of_Examiners.xlsx");
   };
 
   return (
@@ -35,7 +186,7 @@ const App = () => {
       </header>
 
       {/* ── Main ── */}
-      <main className="flex-1 w-full max-w-[900px] mx-auto px-6 py-12 pb-16">
+      <main className="flex-1 w-full max-w-[960px] mx-auto px-6 py-12 pb-16">
 
         {/* Control Card */}
         <div className="flex flex-wrap items-center gap-8 bg-white/85 backdrop-blur-md border border-[#00c9a7]/25 rounded-2xl px-9 py-8 mb-12 shadow-[0_8px_32px_rgba(15,31,61,0.12)]">
@@ -44,7 +195,7 @@ const App = () => {
               Subject Manager
             </h1>
             <p className="text-sm text-[#6b85a3] mt-1 font-light">
-              Set the number of subjects to display below
+              Fill in all subjects, then export the Panel of Examiners sheet
             </p>
           </div>
 
@@ -58,14 +209,7 @@ const App = () => {
               value={inputVal}
               onChange={handleChange}
               onBlur={handleBlur}
-              className="
-                w-[100px] px-4 py-3 text-center text-[22px] font-bold text-[#0f1f3d]
-                bg-sky-50 border-2 border-[#00c9a7]/25 rounded-xl outline-none
-                transition-all duration-200
-                focus:border-[#00c9a7] focus:shadow-[0_0_0_4px_rgba(0,201,167,0.15)]
-                [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
-                font-[Syne,sans-serif]
-              "
+              className="w-[100px] px-4 py-3 text-center text-[22px] font-bold text-[#0f1f3d] bg-sky-50 border-2 border-[#00c9a7]/25 rounded-xl outline-none transition-all duration-200 focus:border-[#00c9a7] focus:shadow-[0_0_0_4px_rgba(0,201,167,0.15)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-[Syne,sans-serif]"
             />
           </div>
         </div>
@@ -78,11 +222,11 @@ const App = () => {
                 className="animate-[fadeSlideIn_0.35s_ease_both]"
                 style={{ animationDelay: `${i * 0.06}s` }}
               >
-                <Subject />
+                <Subject index={i} onChange={handleSubjectChange} />
               </div>
 
               {i < subjectCount - 1 && (
-                <div className="flex items-center gap-4 py-2">
+                <div className="flex items-center gap-4 py-3">
                   <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#00c9a7]/40 to-transparent" />
                   <div className="w-1.5 h-1.5 rounded-full bg-[#00c9a7] opacity-60" />
                   <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#00c9a7]/40 to-transparent" />
@@ -90,6 +234,44 @@ const App = () => {
               )}
             </React.Fragment>
           ))}
+        </div>
+
+        {/* ── Download Button ── */}
+        <div className="mt-14 flex justify-center">
+          <button
+            onClick={downloadExcel}
+            className="group relative flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-[#0f1f3d] to-[#162847] text-white rounded-2xl shadow-[0_8px_32px_rgba(15,31,61,0.25)] hover:shadow-[0_12px_40px_rgba(0,201,167,0.2)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
+          >
+            {/* Shimmer */}
+            <span className="absolute inset-0 bg-gradient-to-r from-[#00c9a7]/0 via-[#00c9a7]/10 to-[#00c9a7]/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+
+            {/* Icon */}
+            <span className="relative w-10 h-10 rounded-xl bg-[#00c9a7]/15 border border-[#00c9a7]/30 flex items-center justify-center shrink-0">
+              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#00c9a7" strokeWidth="1.5" strokeLinejoin="round"/>
+                <polyline points="14 2 14 8 20 8" stroke="#00c9a7" strokeWidth="1.5" strokeLinejoin="round"/>
+                <path d="M8 13h8M8 17h5" stroke="#00c9a7" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M12 10v4l2-2" stroke="#00c9a7" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </span>
+
+            <span className="relative">
+              <span className="block text-[15px] font-bold tracking-wide font-[Syne,sans-serif]">
+                Download Excel
+              </span>
+              <span className="block text-[10px] font-medium text-[#00c9a7]/70 tracking-widest uppercase mt-0.5 font-[DM_Sans,sans-serif]">
+                Panel of Examiners · .xlsx
+              </span>
+            </span>
+
+            <svg
+              className="relative w-4 h-4 text-[#00c9a7] ml-2 group-hover:translate-x-1 transition-transform duration-200"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+              strokeLinecap="round" strokeLinejoin="round"
+            >
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </button>
         </div>
 
       </main>
@@ -105,7 +287,6 @@ const App = () => {
         </span>
       </footer>
 
-      {/* Keyframe for fadeSlideIn — Tailwind can't generate arbitrary @keyframes, so we inject it once */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
         @keyframes fadeSlideIn {
