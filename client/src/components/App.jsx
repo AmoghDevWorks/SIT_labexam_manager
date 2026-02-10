@@ -26,6 +26,62 @@ const App = () => {
 
   // ── Excel Export ──────────────────────────────────────────
   const downloadExcel = () => {
+    // Validation: Check if all required fields are filled
+    const errors = [];
+    
+    for (let i = 0; i < subjectCount; i++) {
+      const d = subjectsData[i] || {};
+      const subjectLabel = `Subject #${i + 1}`;
+      
+      // Check subject details
+      if (!d.subjectName || d.subjectName.trim() === "") {
+        errors.push(`${subjectLabel}: Subject Name is required`);
+      }
+      if (!d.subjectCode || d.subjectCode.trim() === "") {
+        errors.push(`${subjectLabel}: Subject Code is required`);
+      }
+      if (!d.semester || d.semester.trim() === "") {
+        errors.push(`${subjectLabel}: Semester is required`);
+      }
+      if (!d.studentsEnrolled || d.studentsEnrolled.trim() === "") {
+        errors.push(`${subjectLabel}: Number of Students Enrolled is required`);
+      }
+      
+      // Check internal examiners
+      const internals = d.internals || [];
+      internals.forEach((internal, idx) => {
+        if (!internal.name || internal.name.trim() === "") {
+          errors.push(`${subjectLabel} - Internal Examiner #${idx + 1}: Name is required`);
+        }
+      });
+      
+      // Check external examiners
+      const externals = d.externals || [];
+      externals.forEach((external, idx) => {
+        if (!external.name || external.name.trim() === "") {
+          errors.push(`${subjectLabel} - External Examiner #${idx + 1}: Name is required`);
+        }
+        if (!external.address || external.address.trim() === "") {
+          errors.push(`${subjectLabel} - External Examiner #${idx + 1}: Address is required`);
+        }
+        if (!external.contact || external.contact.trim() === "") {
+          errors.push(`${subjectLabel} - External Examiner #${idx + 1}: Contact Number is required`);
+        }
+        if (!external.email || external.email.trim() === "") {
+          errors.push(`${subjectLabel} - External Examiner #${idx + 1}: Email ID is required`);
+        }
+        if (!external.verification || external.verification.trim() === "") {
+          errors.push(`${subjectLabel} - External Examiner #${idx + 1}: Verification is required`);
+        }
+      });
+    }
+    
+    // If there are errors, show alert and stop
+    if (errors.length > 0) {
+      alert(`Please fill all required fields:\n\n${errors.join('\n')}`);
+      return;
+    }
+    
     const wb = XLSX.utils.book_new();
     const wsData = [];
 
@@ -52,7 +108,7 @@ const App = () => {
       "Internal Examiner",
       "Name",
       "Address",
-      "Contact Number(s)",
+      "Contact Number",
       "Email ID",
       "Permission to use already existing Question Paper with same code (Yes / No)",
     ]);
@@ -64,9 +120,9 @@ const App = () => {
       const internals = d.internals || [];
       const externals = d.externals || [];
 
-      // Internal examiners: combine name + verification into one multi-line cell
+      // Internal examiners: just the name
       const internalText = internals
-        .map((ie) => [ie.name, ie.verification ? `(Verification: ${ie.verification})` : ""].filter(Boolean).join(" "))
+        .map((ie) => ie.name)
         .filter(Boolean)
         .join("\n") || "";
 
@@ -151,7 +207,11 @@ const App = () => {
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
         const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
-        if (!ws[cellAddress]) continue;
+        
+        // Create cell if it doesn't exist
+        if (!ws[cellAddress]) {
+          ws[cellAddress] = { t: 's', v: '' };
+        }
 
         ws[cellAddress].s = {
           alignment: {

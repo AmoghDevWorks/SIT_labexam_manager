@@ -141,22 +141,14 @@ const InternalExaminerCard = ({ index, data, onChange, subjectId }) => {
           Internal #{index + 1}
         </span>
       </div>
-      <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <Label required>Name</Label>
-          <Input
-            placeholder="Dr. Examiner Name"
-            value={data.name}
-            onChange={(e) => field("name")(e.target.value)}
-          />
-        </div>
-        <div className="flex items-end pb-1">
-          <VerificationRadio
-            value={data.verification}
-            onChange={field("verification")}
-            name={`internal-${subjectId}-${index}`}
-          />
-        </div>
+      <div className="mt-2">
+        <Label required>Name</Label>
+        <Input
+          placeholder="Dr. Examiner Name"
+          value={data.name}
+          onChange={(e) => field("name")(e.target.value)}
+          required
+        />
       </div>
     </div>
   );
@@ -177,25 +169,26 @@ const ExternalExaminerCard = ({ index, data, onChange, subjectId }) => {
       <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <Label required>Name</Label>
-          <Input placeholder="Dr. Examiner Name" value={data.name} onChange={(e) => field("name")(e.target.value)} />
+          <Input placeholder="Dr. Examiner Name" value={data.name} onChange={(e) => field("name")(e.target.value)} required />
         </div>
         <div>
-          <Label>Contact Number</Label>
-          <Input type="tel" placeholder="+91 98765 43210" value={data.contact} onChange={(e) => field("contact")(e.target.value)} />
+          <Label required>Contact Number</Label>
+          <Input type="tel" placeholder="+91 98765 43210" value={data.contact} onChange={(e) => field("contact")(e.target.value)} required />
         </div>
         <div className="sm:col-span-2">
-          <Label>Address</Label>
+          <Label required>Address</Label>
           <textarea
             rows={2}
             placeholder="Institution / College Address"
             value={data.address}
             onChange={(e) => field("address")(e.target.value)}
             className={`${inputBase} resize-none leading-relaxed`}
+            required
           />
         </div>
         <div>
-          <Label>Email ID</Label>
-          <Input type="email" placeholder="examiner@institution.edu" value={data.email} onChange={(e) => field("email")(e.target.value)} />
+          <Label required>Email ID</Label>
+          <Input type="email" placeholder="examiner@institution.edu" value={data.email} onChange={(e) => field("email")(e.target.value)} required />
         </div>
         <div className="flex items-center">
           <VerificationRadio
@@ -212,7 +205,7 @@ const ExternalExaminerCard = ({ index, data, onChange, subjectId }) => {
 /* ─────────────────────────────────────────────
    Blank factories & sync helper
 ───────────────────────────────────────────── */
-const blankInternal = () => ({ name: "", verification: "" });
+const blankInternal = () => ({ name: "" });
 const blankExternal = () => ({ name: "", address: "", contact: "", email: "", verification: "" });
 
 const syncArray = (arr, count, blank) => {
@@ -234,18 +227,13 @@ const Subject = ({ index, onChange }) => {
   const [semester, setSemester] = useState("");
   const [studentsEnrolled, setStudentsEnrolled] = useState("");
 
-  const [internalCount, setInternalCount] = useState("0");
-  const [externalCount, setExternalCount] = useState("0");
+  const [examinerCount, setExaminerCount] = useState("0");
   const [internals, setInternals] = useState([]);
   const [externals, setExternals] = useState([]);
 
-  const handleInternalCount = (val) => {
-    setInternalCount(val);
+  const handleExaminerCount = (val) => {
+    setExaminerCount(val);
     setInternals((prev) => syncArray(prev, val, blankInternal));
-  };
-
-  const handleExternalCount = (val) => {
-    setExternalCount(val);
     setExternals((prev) => syncArray(prev, val, blankExternal));
   };
 
@@ -291,6 +279,7 @@ const Subject = ({ index, onChange }) => {
                 placeholder="e.g. Data Structures & Algorithms"
                 value={subjectName}
                 onChange={(e) => setSubjectName(e.target.value)}
+                required
               />
             </div>
             <div>
@@ -299,11 +288,12 @@ const Subject = ({ index, onChange }) => {
                 placeholder="e.g. CS301"
                 value={subjectCode}
                 onChange={(e) => setSubjectCode(e.target.value)}
+                required
               />
             </div>
             <div>
               <Label required>Semester</Label>
-              <Select value={semester} onChange={(e) => setSemester(e.target.value)}>
+              <Select value={semester} onChange={(e) => setSemester(e.target.value)} required>
                 <option value="" disabled>Select Semester</option>
                 {semesterLabels.map((s) => (
                   <option key={s} value={s}>Semester {s}</option>
@@ -322,50 +312,51 @@ const Subject = ({ index, onChange }) => {
                   if (v === "" || /^\d+$/.test(v)) setStudentsEnrolled(v);
                 }}
                 className={`${inputBase} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                required
               />
             </div>
           </div>
 
           <DividerLine />
 
-          {/* Internal Examiners */}
+          {/* Examiners Count Control */}
           <div className="mb-5">
-            <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
-              <SectionHeading icon="🎓" title="Internal Examiners" subtitle="Faculty conducting internal evaluation" />
-              <CountStepper label="Count" value={internalCount} onChange={handleInternalCount} />
+            <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
+              <SectionHeading icon="👥" title="Examiners" subtitle="Internal and External examiners (equal count)" />
+              <CountStepper label="Count" value={examinerCount} onChange={handleExaminerCount} />
             </div>
-            {internals.length === 0 ? (
-              <div className="text-center py-6 text-[#6b85a3]/50 text-xs font-medium border border-dashed border-[#00c9a7]/20 rounded-xl bg-sky-50/40">
-                No internal examiners added — use the stepper above
-              </div>
-            ) : (
-              <div className="flex flex-col gap-5">
-                {internals.map((examiner, i) => (
-                  <InternalExaminerCard key={i} index={i} data={examiner} onChange={updateInternal} subjectId={id} />
-                ))}
-              </div>
-            )}
-          </div>
 
-          <DividerLine />
-
-          {/* External Examiners */}
-          <div>
-            <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
-              <SectionHeading icon="🏛️" title="External Examiners" subtitle="Guest evaluators from other institutions" />
-              <CountStepper label="Count" value={externalCount} onChange={handleExternalCount} />
+            {/* Internal Examiners */}
+            <div className="mb-6">
+              <h4 className="text-[12px] font-bold text-[#1a2e4a] mb-3 font-[Syne,sans-serif]">🎓 Internal Examiners</h4>
+              {internals.length === 0 ? (
+                <div className="text-center py-6 text-[#6b85a3]/50 text-xs font-medium border border-dashed border-[#00c9a7]/20 rounded-xl bg-sky-50/40">
+                  No internal examiners added — use the stepper above
+                </div>
+              ) : (
+                <div className="flex flex-col gap-5">
+                  {internals.map((examiner, i) => (
+                    <InternalExaminerCard key={i} index={i} data={examiner} onChange={updateInternal} subjectId={id} />
+                  ))}
+                </div>
+              )}
             </div>
-            {externals.length === 0 ? (
-              <div className="text-center py-6 text-[#6b85a3]/50 text-xs font-medium border border-dashed border-[#00c9a7]/20 rounded-xl bg-sky-50/40">
-                No external examiners added — use the stepper above
-              </div>
-            ) : (
-              <div className="flex flex-col gap-5">
-                {externals.map((examiner, i) => (
-                  <ExternalExaminerCard key={i} index={i} data={examiner} onChange={updateExternal} subjectId={id} />
-                ))}
-              </div>
-            )}
+
+            {/* External Examiners */}
+            <div>
+              <h4 className="text-[12px] font-bold text-[#1a2e4a] mb-3 font-[Syne,sans-serif]">🏛️ External Examiners</h4>
+              {externals.length === 0 ? (
+                <div className="text-center py-6 text-[#6b85a3]/50 text-xs font-medium border border-dashed border-[#00c9a7]/20 rounded-xl bg-sky-50/40">
+                  No external examiners added — use the stepper above
+                </div>
+              ) : (
+                <div className="flex flex-col gap-5">
+                  {externals.map((examiner, i) => (
+                    <ExternalExaminerCard key={i} index={i} data={examiner} onChange={updateExternal} subjectId={id} />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
         </div>
