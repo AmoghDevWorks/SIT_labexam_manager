@@ -273,7 +273,7 @@ const App = () => {
       const pageWidth = doc.internal.pageSize.getWidth();
       doc.text(title, pageWidth / 2, 15, { align: 'center' });
 
-      // Prepare table data
+      // Prepare table data with rowSpan information
       const tableData = [];
       let slNo = 1;
 
@@ -288,19 +288,32 @@ const App = () => {
           const int = internals[r] || {};
           const isFirstRow = r === 0;
 
-          tableData.push([
-            isFirstRow ? String(slNo) : "",
-            isFirstRow ? (d.subjectName || "") : "",
-            isFirstRow ? (d.subjectCode || "") : "",
-            isFirstRow ? (d.semester ? `Semester ${d.semester}` : "") : "",
-            isFirstRow ? String(d.studentsEnrolled || "") : "",
-            int.name || "",
-            ext.name || "",
-            ext.address || "",
-            ext.contact || "",
-            ext.email || "",
-            ext.verification || "",
-          ]);
+          if (isFirstRow) {
+            // First row with rowSpan for merged cells
+            tableData.push([
+              { content: String(slNo), rowSpan: maxRows, styles: { valign: 'middle', halign: 'center' } },
+              { content: d.subjectName || "", rowSpan: maxRows, styles: { valign: 'middle', halign: 'left' } },
+              { content: d.subjectCode || "", rowSpan: maxRows, styles: { valign: 'middle', halign: 'center' } },
+              { content: d.semester ? `Semester ${d.semester}` : "", rowSpan: maxRows, styles: { valign: 'middle', halign: 'center' } },
+              { content: String(d.studentsEnrolled || ""), rowSpan: maxRows, styles: { valign: 'middle', halign: 'center' } },
+              { content: int.name || "", styles: { halign: 'left' } },
+              { content: ext.name || "", styles: { halign: 'left' } },
+              { content: ext.address || "", styles: { halign: 'left' } },
+              { content: ext.contact || "", styles: { halign: 'center' } },
+              { content: ext.email || "", styles: { halign: 'left' } },
+              { content: ext.verification || "", styles: { halign: 'center' } },
+            ]);
+          } else {
+            // Subsequent rows - only examiner columns
+            tableData.push([
+              { content: int.name || "", styles: { halign: 'left' } },
+              { content: ext.name || "", styles: { halign: 'left' } },
+              { content: ext.address || "", styles: { halign: 'left' } },
+              { content: ext.contact || "", styles: { halign: 'center' } },
+              { content: ext.email || "", styles: { halign: 'left' } },
+              { content: ext.verification || "", styles: { halign: 'center' } },
+            ]);
+          }
         }
         slNo++;
       }
