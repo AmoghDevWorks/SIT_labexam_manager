@@ -2,6 +2,8 @@ import React, { useState, useCallback } from "react";
 import Subject from "./Subject";
 import SITLOGO from '../assets/sit.png';
 import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const App = () => {
   const [inputVal, setInputVal] = useState("1");
@@ -24,9 +26,8 @@ const App = () => {
     setSubjectsData((prev) => ({ ...prev, [index]: data }));
   }, []);
 
-  // ── Excel Export ──────────────────────────────────────────
-  const downloadExcel = () => {
-    // Validation: Check if all required fields are filled
+  // ── Validation Helper ──────────────────────────────────────
+  const validateData = () => {
     const errors = [];
     
     for (let i = 0; i < subjectCount; i++) {
@@ -87,6 +88,13 @@ const App = () => {
         }
       });
     }
+    
+    return errors;
+  };
+
+  // ── Excel Export ──────────────────────────────────────────
+  const downloadExcel = () => {
+    const errors = validateData();
     
     // If there are errors, show alert and stop
     if (errors.length > 0) {
@@ -241,6 +249,136 @@ const App = () => {
     XLSX.writeFile(wb, "Panel_of_Examiners.xlsx");
   };
 
+  // ── PDF Export ──────────────────────────────────────────
+  const downloadPDF = () => {
+    try {
+      const errors = validateData();
+      
+      // If there are errors, show alert and stop
+      if (errors.length > 0) {
+        alert(`Please fill all required fields:\n\n${errors.join('\n')}`);
+        return;
+      }
+
+      const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      // Add title
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      const title = 'Panel of Examiners for ODD Semester (2025-2026) - December 2025 - January 2026';
+      const pageWidth = doc.internal.pageSize.getWidth();
+      doc.text(title, pageWidth / 2, 15, { align: 'center' });
+
+      // Prepare table data
+      const tableData = [];
+      let slNo = 1;
+
+      for (let i = 0; i < subjectCount; i++) {
+        const d = subjectsData[i] || {};
+        const internals = d.internals || [];
+        const externals = d.externals || [];
+        const maxRows = Math.max(externals.length, internals.length, 1);
+
+        for (let r = 0; r < maxRows; r++) {
+          const ext = externals[r] || {};
+          const int = internals[r] || {};
+          const isFirstRow = r === 0;
+
+          tableData.push([
+            isFirstRow ? String(slNo) : "",
+            isFirstRow ? (d.subjectName || "") : "",
+            isFirstRow ? (d.subjectCode || "") : "",
+            isFirstRow ? (d.semester ? `Semester ${d.semester}` : "") : "",
+            isFirstRow ? String(d.studentsEnrolled || "") : "",
+            int.name || "",
+            ext.name || "",
+            ext.address || "",
+            ext.contact || "",
+            ext.email || "",
+            ext.verification || "",
+          ]);
+        }
+        slNo++;
+      }
+
+      // Create table with autoTable
+      autoTable(doc, {
+        head: [
+          [
+            { content: '', colSpan: 6, styles: { halign: 'center', fillColor: [255, 255, 255], textColor: [0, 0, 0] } },
+            { content: 'External Examiner', colSpan: 5, styles: { halign: 'center', fillColor: [220, 230, 240], textColor: [0, 0, 0], fontStyle: 'bold' } }
+          ],
+          [
+            { content: 'Sl No', styles: { halign: 'center' } },
+            { content: 'Subject', styles: { halign: 'center' } },
+            { content: 'Subject Code', styles: { halign: 'center' } },
+            { content: 'Semester', styles: { halign: 'center' } },
+            { content: 'Number of Students', styles: { halign: 'center' } },
+            { content: 'Internal Examiner', styles: { halign: 'center' } },
+            { content: 'Name', styles: { halign: 'center' } },
+            { content: 'Address', styles: { halign: 'center' } },
+            { content: 'Contact Number', styles: { halign: 'center' } },
+            { content: 'Email ID', styles: { halign: 'center' } },
+            { content: 'Permission to use already existing Question Paper with same code (Yes / No)', styles: { halign: 'center' } }
+          ]
+        ],
+        body: tableData,
+        startY: 22,
+        theme: 'grid',
+        styles: {
+          fontSize: 7,
+          cellPadding: 1.5,
+          halign: 'center',
+          valign: 'middle',
+          lineColor: [0, 0, 0],
+          lineWidth: 0.1,
+          overflow: 'linebreak',
+        },
+        headStyles: {
+          fillColor: [15, 31, 61],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          halign: 'center',
+          fontSize: 7,
+        },
+        columnStyles: {
+          0: { cellWidth: 10, halign: 'center' },  // Sl No
+          1: { cellWidth: 24, halign: 'left' },    // Subject
+          2: { cellWidth: 16, halign: 'center' },  // Subject Code
+          3: { cellWidth: 16, halign: 'center' },  // Semester
+          4: { cellWidth: 18, halign: 'center' },  // Number of Students
+          5: { cellWidth: 26, halign: 'left' },    // Internal Examiner
+          6: { cellWidth: 24, halign: 'left' },    // External Name
+          7: { cellWidth: 28, halign: 'left' },    // Address
+          8: { cellWidth: 20, halign: 'center' },  // Contact
+          9: { cellWidth: 26, halign: 'left' },    // Email
+          10: { cellWidth: 18, halign: 'center' }, // Permission
+        },
+        margin: { top: 22, left: 8, right: 8, bottom: 10 },
+        didDrawPage: function(data) {
+          // Footer
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'normal');
+          doc.text(
+            'Siddaganga Institute of Technology',
+            data.settings.margin.left,
+            doc.internal.pageSize.getHeight() - 5
+          );
+        }
+      });
+
+      doc.save('Panel_of_Examiners.pdf');
+      console.log('PDF generated successfully');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF: ' + error.message);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen font-sans bg-gradient-to-br from-sky-100 via-blue-100 to-emerald-50">
 
@@ -325,8 +463,9 @@ const App = () => {
           ))}
         </div>
 
-        {/* ── Download Button ── */}
-        <div className="mt-14 flex justify-center">
+        {/* ── Download Buttons ── */}
+        <div className="mt-14 flex justify-center gap-4 flex-wrap">
+          {/* Excel Download Button */}
           <button
             onClick={downloadExcel}
             className="group relative flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-[#0f1f3d] to-[#162847] text-white rounded-2xl shadow-[0_8px_32px_rgba(15,31,61,0.25)] hover:shadow-[0_12px_40px_rgba(0,201,167,0.2)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
@@ -355,6 +494,41 @@ const App = () => {
 
             <svg
               className="relative w-4 h-4 text-[#00c9a7] ml-2 group-hover:translate-x-1 transition-transform duration-200"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+              strokeLinecap="round" strokeLinejoin="round"
+            >
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </button>
+
+          {/* PDF Download Button */}
+          <button
+            onClick={downloadPDF}
+            className="group relative flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-[#00a98c] to-[#00c9a7] text-white rounded-2xl shadow-[0_8px_32px_rgba(0,201,167,0.25)] hover:shadow-[0_12px_40px_rgba(0,201,167,0.35)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
+          >
+            {/* Shimmer */}
+            <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+
+            {/* Icon */}
+            <span className="relative w-10 h-10 rounded-xl bg-white/15 border border-white/30 flex items-center justify-center shrink-0">
+              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
+                <polyline points="14 2 14 8 20 8" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
+                <path d="M9 13h6M9 17h6" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </span>
+
+            <span className="relative">
+              <span className="block text-[15px] font-bold tracking-wide font-[Syne,sans-serif]">
+                Download PDF
+              </span>
+              <span className="block text-[10px] font-medium text-white/70 tracking-widest uppercase mt-0.5 font-[DM_Sans,sans-serif]">
+                Panel of Examiners · .pdf
+              </span>
+            </span>
+
+            <svg
+              className="relative w-4 h-4 text-white ml-2 group-hover:translate-x-1 transition-transform duration-200"
               viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
               strokeLinecap="round" strokeLinejoin="round"
             >
