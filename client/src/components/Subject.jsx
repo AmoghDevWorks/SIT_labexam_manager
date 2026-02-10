@@ -47,7 +47,7 @@ const DividerLine = () => (
 const VerificationRadio = ({ value, onChange, name }) => (
   <div className="flex items-center gap-2 flex-wrap">
     <span className="text-[11px] font-bold tracking-[0.08em] uppercase text-[#6b85a3] font-[Syne,sans-serif]">
-      Verification
+      Permission to use already existing Question Paper with same code (Yes / No) <span className="text-green-400">*</span>
     </span>
     <div className="flex gap-2">
       {["Yes", "No"].map((opt) => {
