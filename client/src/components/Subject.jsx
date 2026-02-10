@@ -175,7 +175,7 @@ const ExternalExaminerCard = ({ index, data, onChange, subjectId }) => {
           <Label required>Contact Number</Label>
           <Input 
             type="tel" 
-            placeholder="+91 98765 43210" 
+            placeholder="98765 xxxxx" 
             value={data.contact} 
             onChange={(e) => {
               const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
