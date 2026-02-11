@@ -507,7 +507,7 @@ const Hero = () => {
               <span className="block text-[15px] font-bold tracking-wide font-[Syne,sans-serif]">
                 Download Excel
               </span>
-              <span className="block text-[10px] font-medium text-[#00c9a7]/70 tracking-widest uppercase mt-0.5 font-[DM_Sans,sans-serif]">
+              <span className="block text-[10px] text-[#00c9a7]/70 tracking-widest uppercase mt-0.5 font-[DM_Sans,sans-serif]">
                 Panel of Examiners · .xlsx
               </span>
             </span>
@@ -542,7 +542,7 @@ const Hero = () => {
               <span className="block text-[15px] font-bold tracking-wide font-[Syne,sans-serif]">
                 Download PDF
               </span>
-              <span className="block text-[10px] font-medium text-white/70 tracking-widest uppercase mt-0.5 font-[DM_Sans,sans-serif]">
+              <span className="block text-[10px] text-white/70 tracking-widest uppercase mt-0.5 font-[DM_Sans,sans-serif]">
                 Panel of Examiners · .pdf
               </span>
             </span>
