@@ -44,7 +44,7 @@ const router = createBrowserRouter([
         element: <UploadExcel />
       },
       {
-        path:'/login-admin',
+        path:'/loginAdmin',
         element: <AdminLogin />
       },
       {
