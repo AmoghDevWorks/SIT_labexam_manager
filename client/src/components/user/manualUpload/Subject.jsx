@@ -1,4 +1,7 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import axios from "axios";
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 /* ─────────────────────────────────────────────
    Tiny reusable primitives
@@ -24,6 +27,87 @@ const Select = ({ children, ...props }) => (
     {children}
   </select>
 );
+
+/* ─────────────────────────────────────────────
+   Searchable Dropdown with Filtering
+───────────────────────────────────────────── */
+const SearchableDropdown = ({ options, value, onChange, placeholder, required, label }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filtered = options.filter((opt) =>
+    opt.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const handleSelect = (opt) => {
+    onChange(opt);
+    setIsOpen(false);
+    setSearch("");
+  };
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className={`${inputBase} cursor-pointer flex items-center justify-between ${!value ? "text-[#6b85a3]/60" : ""}`}
+      >
+        <span className="truncate">{value || placeholder}</span>
+        <svg
+          className={`w-3 h-3 text-[#00c9a7] transition-transform shrink-0 ml-2 ${isOpen ? "rotate-180" : ""}`}
+          fill="none"
+          viewBox="0 0 12 8"
+        >
+          <path d="M1 1l5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-[#00c9a7]/30 rounded-xl shadow-[0_8px_24px_rgba(15,31,61,0.15)] overflow-hidden">
+          <div className="p-2 border-b border-[#00c9a7]/20">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={`Search ${label || 'options'}...`}
+              className="w-full px-3 py-1.5 text-sm text-[#1a2e4a] bg-sky-50 border border-[#00c9a7]/20 rounded-lg outline-none focus:border-[#00c9a7] placeholder:text-[#6b85a3]/50"
+              autoFocus
+            />
+          </div>
+          <div className="max-h-48 overflow-y-auto">
+            {filtered.length === 0 ? (
+              <div className="px-4 py-3 text-sm text-[#6b85a3] text-center">No options found</div>
+            ) : (
+              filtered.map((opt, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => handleSelect(opt)}
+                  className={`px-4 py-2 text-sm cursor-pointer transition-colors ${
+                    opt === value
+                      ? "bg-[#00c9a7]/10 text-[#00a98c] font-semibold"
+                      : "text-[#1a2e4a] hover:bg-sky-50"
+                  }`}
+                >
+                  {opt}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const SectionHeading = ({ icon, title, subtitle }) => (
   <div className="flex items-center gap-3 mb-4">
@@ -132,7 +216,7 @@ const CountStepper = ({ label, value, onChange, min = 0 }) => {
 /* ─────────────────────────────────────────────
    Internal Examiner Card
 ───────────────────────────────────────────── */
-const InternalExaminerCard = ({ index, data, onChange, subjectId }) => {
+const InternalExaminerCard = ({ index, data, onChange, subjectId, internalExaminers }) => {
   const field = (key) => (val) => onChange(index, key, val);
   return (
     <div className="relative bg-gradient-to-br from-sky-50/80 to-emerald-50/40 border border-[#00c9a7]/20 rounded-xl p-4 shadow-[0_2px_12px_rgba(15,31,61,0.05)]">
@@ -143,10 +227,12 @@ const InternalExaminerCard = ({ index, data, onChange, subjectId }) => {
       </div>
       <div className="mt-2">
         <Label required>Name</Label>
-        <Input
-          placeholder="Dr. Examiner Name"
+        <SearchableDropdown
+          options={internalExaminers}
           value={data.name}
-          onChange={(e) => field("name")(e.target.value)}
+          onChange={field("name")}
+          placeholder="Select or search examiner..."
+          label="examiners"
           required
         />
       </div>
@@ -243,6 +329,39 @@ const Subject = ({ index, onChange }) => {
   const [internals, setInternals] = useState([blankInternal()]);
   const [externals, setExternals] = useState([blankExternal()]);
 
+  // API data
+  const [subjects, setSubjects] = useState([]);
+  const [internalExaminers, setInternalExaminers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch subjects and internal examiners on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [subjectsRes, examinersRes] = await Promise.all([
+          axios.get(`${BACKEND_URL}/api/subjects`),
+          axios.get(`${BACKEND_URL}/api/internal-examiners`)
+        ]);
+        
+        // Map subjects to get both name and code
+        const subjectsData = subjectsRes.data.map(s => ({
+          name: s.subjectName,
+          code: s.subjectCode
+        }));
+        setSubjects(subjectsData);
+        
+        // Map internal examiners
+        const examinersData = examinersRes.data.map(e => e.name);
+        setInternalExaminers(examinersData);
+      } catch (err) {
+        console.error("Failed to fetch data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   const handleExaminerCount = (val) => {
     setExaminerCount(val);
     setInternals((prev) => syncArray(prev, val, blankInternal));
@@ -254,6 +373,15 @@ const Subject = ({ index, onChange }) => {
 
   const updateExternal = useCallback((idx, key, val) =>
     setExternals((prev) => prev.map((e, i) => (i === idx ? { ...e, [key]: val } : e))), []);
+
+  // When subject name is selected, auto-fill subject code
+  const handleSubjectNameChange = (name) => {
+    setSubjectName(name);
+    const subject = subjects.find(s => s.name === name);
+    if (subject) {
+      setSubjectCode(subject.code);
+    }
+  };
 
   // Lift state up to App whenever anything changes
   useEffect(() => {
@@ -287,19 +415,28 @@ const Subject = ({ index, onChange }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-2">
             <div>
               <Label required>Subject Name</Label>
-              <Input
-                placeholder="e.g. Data Structures & Algorithms"
-                value={subjectName}
-                onChange={(e) => setSubjectName(e.target.value)}
-                required
-              />
+              {loading ? (
+                <div className="w-full px-4 py-2.5 bg-sky-50 border border-[#00c9a7]/25 rounded-xl animate-pulse">
+                  <div className="h-4 bg-[#00c9a7]/20 rounded"></div>
+                </div>
+              ) : (
+                <SearchableDropdown
+                  options={subjects.map(s => s.name)}
+                  value={subjectName}
+                  onChange={handleSubjectNameChange}
+                  placeholder="Select or search subject..."
+                  label="subjects"
+                  required
+                />
+              )}
             </div>
             <div>
               <Label required>Subject Code</Label>
               <Input
-                placeholder="e.g. CS301"
+                placeholder="Auto-filled from subject"
                 value={subjectCode}
                 onChange={(e) => setSubjectCode(e.target.value)}
+                className={`${inputBase} ${subjectName ? 'bg-[#00c9a7]/5 font-semibold text-[#00a98c]' : ''}`}
                 required
               />
             </div>
@@ -341,11 +478,24 @@ const Subject = ({ index, onChange }) => {
             {/* Internal Examiners */}
             <div className="mb-6">
               <h4 className="text-[12px] font-bold text-[#1a2e4a] mb-3 font-[Syne,sans-serif]">🎓 Internal Examiners</h4>
-              <div className="flex flex-col gap-5">
-                {internals.map((examiner, i) => (
-                  <InternalExaminerCard key={i} index={i} data={examiner} onChange={updateInternal} subjectId={id} />
-                ))}
-              </div>
+              {loading ? (
+                <div className="bg-sky-50 border border-[#00c9a7]/25 rounded-xl p-4 animate-pulse">
+                  <div className="h-10 bg-[#00c9a7]/20 rounded"></div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-5">
+                  {internals.map((examiner, i) => (
+                    <InternalExaminerCard 
+                      key={i} 
+                      index={i} 
+                      data={examiner} 
+                      onChange={updateInternal} 
+                      subjectId={id}
+                      internalExaminers={internalExaminers}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* External Examiners */}
