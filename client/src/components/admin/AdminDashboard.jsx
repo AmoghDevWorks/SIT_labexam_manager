@@ -87,7 +87,7 @@ const AdminDashboard = () => {
         {/* Welcome Section */}
         <div className="mb-12 animate-[fadeSlideIn_0.5s_ease_both]">
           <h2 className="text-[28px] sm:text-[36px] font-extrabold text-[#1a2e4a] font-[Syne,sans-serif] mb-3">
-            Welcome Back! 👋
+            Welcome Back! 
           </h2>
           <p className="text-[15px] text-[#6b85a3] font-[DM_Sans,sans-serif]">
             Select an option below to manage your academic data
