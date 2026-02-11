@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import axios from 'axios';
-import { useAdmin } from "../utils/AdminContext";
+import { useAdmin } from "../utils/adminContext";
+import { useNavigate } from "react-router-dom";
 
 const AdminLogin = () => {
   const [username, setUsername] = useState('');
@@ -9,9 +10,11 @@ const AdminLogin = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const navigate = useNavigate()
+
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
-  const { setAdminUid } = useAdmin();
+  const { setAdminUid,adminUid  } = useAdmin();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,8 +27,6 @@ const AdminLogin = () => {
         password
       });
 
-      // Handle successful login
-      // console.log('Login successful:', response.data);
       const adminId = response.data.admin.id
       setAdminUid(adminId)
     } catch (err) {
@@ -34,6 +35,12 @@ const AdminLogin = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (adminUid) {
+      navigate("/admin/dashboard");
+    }
+  }, [adminUid]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-100 via-blue-100 to-emerald-50 px-4 py-8">
