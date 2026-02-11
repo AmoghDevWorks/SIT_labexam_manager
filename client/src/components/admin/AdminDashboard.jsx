@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '../utils/adminContext';
 
 const AdminDashboard = () => {
-  const { adminUid } = useAdmin();
+  const { adminUid, setAdminUid } = useAdmin();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -11,6 +11,11 @@ const AdminDashboard = () => {
       navigate('/');
     }
   }, [adminUid, navigate]);
+
+  const handleLogout = () => {
+    setAdminUid(null);
+    navigate('/');
+  };
 
   const dashboardCards = [
     {
@@ -75,9 +80,22 @@ const AdminDashboard = () => {
               Siddaganga Institute of Technology
             </p>
           </div>
-          <span className="text-[#00c9a7] text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full border border-[#00c9a7]/40 bg-[#00c9a7]/10 font-[Syne,sans-serif]">
-            Admin Panel
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-[#00c9a7] text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full border border-[#00c9a7]/40 bg-[#00c9a7]/10 font-[Syne,sans-serif]">
+              Admin Panel
+            </span>
+            <button
+              onClick={handleLogout}
+              className="group flex items-center gap-2 px-4 py-2 bg-rose-500/10 hover:bg-rose-500 border border-rose-400/40 hover:border-rose-500 rounded-xl transition-all duration-200 hover:shadow-[0_4px_16px_rgba(239,68,68,0.3)]"
+            >
+              <svg className="w-4 h-4 text-rose-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              <span className="text-xs font-bold text-rose-400 group-hover:text-white transition-colors font-[Syne,sans-serif]">
+                Logout
+              </span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -149,7 +167,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Quick Stats Section (Optional) */}
-        <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 animate-[fadeSlideIn_0.5s_ease_both]" style={{ animationDelay: '0.3s' }}>
+        {/* <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 animate-[fadeSlideIn_0.5s_ease_both]" style={{ animationDelay: '0.3s' }}>
           <div className="bg-white/85 backdrop-blur-md border border-[#00c9a7]/20 rounded-xl p-5 shadow-[0_4px_16px_rgba(15,31,61,0.08)]">
             <div className="flex items-center justify-between">
               <div>
@@ -191,7 +209,7 @@ const AdminDashboard = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
 
       </main>
     </div>

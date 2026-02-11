@@ -5,7 +5,7 @@ const ProtectedRoute = ({ children }) => {
   const { adminUid } = useAdmin();
 
   if (!adminUid) {
-    return <Navigate to="/login-admin" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return children;
