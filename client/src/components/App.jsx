@@ -8,6 +8,7 @@ import Home from './user/Home'
 import Header from './Header'
 import Footer from "./Footer";
 import UploadExcel from "./user/excelUpload/UploadExcel";
+import AdminLogin from "./admin/AdminLogin";
 
 // Layout Component
 const Layout = () => {
@@ -33,6 +34,10 @@ const router = createBrowserRouter([
       {
         path:'/excel',
         element: <UploadExcel />
+      },
+      {
+        path:'/login-admin',
+        element: <AdminLogin />
       }
     ],
   },
