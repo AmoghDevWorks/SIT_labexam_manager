@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const App = () => {
+const Hero = () => {
   const [inputVal, setInputVal] = useState("1");
   const subjectCount = Math.max(1, parseInt(inputVal, 10) || 0);
 
@@ -570,4 +570,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default Hero;

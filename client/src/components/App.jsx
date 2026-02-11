@@ -4,7 +4,7 @@ import {
   Outlet,
   RouterProvider,
 } from "react-router-dom";
-import Home from '../components/user/manualUpload/Home'
+import Home from './user/Home'
 import Header from './Header'
 import Footer from "./Footer";
 import UploadExcel from "./user/excelUpload/UploadExcel";
