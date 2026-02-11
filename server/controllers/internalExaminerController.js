@@ -1,4 +1,4 @@
-const InternalExaminer = require("../models/InternalExaminer");
+const InternalExaminer = require("../models/internalExaminer");
 
 // =======================
 // CREATE INTERNAL EXAMINER
