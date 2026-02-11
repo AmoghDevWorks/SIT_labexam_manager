@@ -5,6 +5,7 @@ const connectDB = require("./db/config");
 
 const adminRoutes = require("./routes/adminRoutes");
 const subjectRoutes = require("./routes/subjectRoutes");
+const internalExaminerRoutes = require("./routes/internalExaminerRoutes");
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.get("/", (req, res) => {
 // Routes
 app.use("/api/admin", adminRoutes);
 app.use("/api/subjects", subjectRoutes);
+app.use("/api/internal-examiners", internalExaminerRoutes);
 
 const PORT = process.env.PORT || 5000;
 

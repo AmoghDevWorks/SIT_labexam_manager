@@ -26,3 +26,14 @@
 | GET | `/api/subjects/:id` | Retrieve a single subject by its MongoDB ID |
 | PUT | `/api/subjects/:id` | Update a subject's name and/or code by its MongoDB ID |
 | DELETE | `/api/subjects/:id` | Delete a subject by its MongoDB ID |
+
+---
+
+## Internal Examiner Routes — `/api/internal-examiners`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/internal-examiners` | Create a new internal examiner. `name` must be unique |
+| GET | `/api/internal-examiners` | Retrieve all internal examiners sorted by newest first |
+| PUT | `/api/internal-examiners/:id` | Update an internal examiner's name by its MongoDB ID. Prevents duplicate names |
+| DELETE | `/api/internal-examiners/:id` | Delete an internal examiner by its MongoDB ID |
