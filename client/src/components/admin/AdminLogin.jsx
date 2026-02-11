@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useAdmin } from "../utils/AdminContext";
 
 const AdminLogin = () => {
   const [username, setUsername] = useState('');
@@ -9,6 +10,8 @@ const AdminLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+  const { setAdminUid } = useAdmin();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,11 +25,9 @@ const AdminLogin = () => {
       });
 
       // Handle successful login
-      console.log('Login successful:', response.data);
-      // Store token or redirect as needed
-      // localStorage.setItem('token', response.data.token);
-      // navigate('/dashboard');
-      
+      // console.log('Login successful:', response.data);
+      const adminId = response.data.admin.id
+      setAdminUid(adminId)
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please try again.');
     } finally {

@@ -4,6 +4,9 @@ import {
   Outlet,
   RouterProvider,
 } from "react-router-dom";
+
+import { AdminProvider } from "./utils/adminContext";
+
 import Home from './user/Home'
 import Header from './Header'
 import Footer from "./Footer";
@@ -45,7 +48,11 @@ const router = createBrowserRouter([
 
 // App Component
 const App = () => {
-  return <RouterProvider router={router} />;
+  return(
+    <AdminProvider>
+      <RouterProvider router={router} />
+    </AdminProvider>
+  )
 };
 
 export default App;
