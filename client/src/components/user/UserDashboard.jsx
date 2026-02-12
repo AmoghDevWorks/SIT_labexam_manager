@@ -22,7 +22,7 @@ const UserDashboard = () => {
       {/* Toggle Section */}
       <div className="sticky top-0 z-50 bg-gradient-to-r from-[#0f1f3d] to-[#162847] shadow-[0_4px_24px_rgba(15,31,61,0.25)]">
         <div className="max-w-[960px] mx-auto px-6 py-4">
-          <div className="flex items-center justify-center gap-2 bg-[#1a2e4a]/30 p-1.5 rounded-xl border border-[#00c9a7]/20 backdrop-blur-sm w-fit mx-auto">\n            <button
+          <div className="flex items-center justify-center gap-2 bg-[#1a2e4a]/30 p-1.5 rounded-xl border border-[#00c9a7]/20 backdrop-blur-sm w-fit mx-auto">           <button
               onClick={() => setActiveTab('hero')}
               className={`relative px-6 py-2.5 rounded-lg text-sm font-bold tracking-wide transition-all duration-300 font-[Syne,sans-serif] ${
                 activeTab === 'hero'
