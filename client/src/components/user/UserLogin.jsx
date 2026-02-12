@@ -53,6 +53,17 @@ const UserLogin = () => {
 
       {/* Login Card */}
       <div className="w-full max-w-[460px]">
+        {/* Back to Home Button */}
+        <button
+          onClick={() => navigate('/')}
+          className="group flex items-center gap-2 mb-4 px-4 py-2.5 text-[13px] font-semibold text-[#1a2e4a] bg-white/60 backdrop-blur-sm border border-[#00c9a7]/20 rounded-xl hover:bg-white/80 hover:border-[#00c9a7]/40 transition-all duration-200 shadow-sm hover:shadow-md font-[DM_Sans,sans-serif]"
+        >
+          <svg viewBox="0 0 20 20" className="w-4 h-4 text-[#00a98c] group-hover:-translate-x-0.5 transition-transform duration-200" fill="none">
+            <path d="M15 10H5M5 10l4-4M5 10l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Back to Home
+        </button>
+        
         <div className="bg-white/85 backdrop-blur-md border border-[#00c9a7]/25 rounded-2xl shadow-[0_8px_32px_rgba(15,31,61,0.12)] overflow-hidden">
           {/* Top accent */}
           <div className="h-1 w-full bg-gradient-to-r from-[#00c9a7] via-[#00e5c4] to-[#00a98c]" />
