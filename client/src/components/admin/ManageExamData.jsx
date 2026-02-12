@@ -13,6 +13,9 @@ const ManageExamData = () => {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [selectedExamData, setSelectedExamData] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   const semesterLabels = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
 
@@ -98,6 +101,75 @@ const ManageExamData = () => {
     };
 
     downloadPDF(subjectsData, 1);
+  };
+
+  // Open edit modal
+  const handleEditClick = () => {
+    setEditFormData({
+      ...selectedExamData,
+      studentsEnrolled: selectedExamData.studentsEnrolled.toString()
+    });
+    setShowModal(false);
+    setShowEditModal(true);
+  };
+
+  // Update form field
+  const updateEditField = (field, value) => {
+    setEditFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Update internal examiner
+  const updateInternalExaminer = (index, value) => {
+    setEditFormData(prev => ({
+      ...prev,
+      internals: prev.internals.map((item, idx) => 
+        idx === index ? { ...item, name: value } : item
+      )
+    }));
+  };
+
+  // Update external examiner
+  const updateExternalExaminer = (index, field, value) => {
+    setEditFormData(prev => ({
+      ...prev,
+      externals: prev.externals.map((item, idx) => 
+        idx === index ? { ...item, [field]: value } : item
+      )
+    }));
+  };
+
+  // Save changes
+  const handleSaveChanges = async () => {
+    try {
+      setSaving(true);
+
+      const updateData = {
+        semester: editFormData.semester,
+        subjectName: editFormData.subjectName,
+        subjectCode: editFormData.subjectCode,
+        studentsEnrolled: parseInt(editFormData.studentsEnrolled, 10),
+        verification: editFormData.verification,
+        internals: editFormData.internals,
+        externals: editFormData.externals.map(ext => ({
+          ...ext,
+          yearsOfExperience: parseInt(ext.yearsOfExperience, 10)
+        }))
+      };
+
+      await axios.put(`${BACKEND_URL}/api/exam-data/${editFormData._id}`, updateData);
+      
+      alert('✅ Exam data updated successfully!');
+      setShowEditModal(false);
+      setEditFormData(null);
+      
+      // Refresh data
+      fetchData();
+    } catch (error) {
+      console.error('Error updating exam data:', error);
+      alert(`❌ Error updating exam data: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -358,32 +430,262 @@ const ManageExamData = () => {
               </div>
             </div>
 
-            {/* Modal Footer - Download Buttons */}
+            {/* Modal Footer - Action Buttons */}
+            <div className="bg-sky-50 border-t border-[#00c9a7]/20 px-8 py-5">
+              {/* Stacked layout for sm, row layout for md+ */}
+              <div className="flex flex-col md:flex-row gap-3">
+                <button
+                  onClick={handleEditClick}
+                  className="w-full md:w-auto group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl shadow-[0_4px_16px_rgba(37,99,235,0.2)] hover:shadow-[0_6px_24px_rgba(37,99,235,0.3)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
+                >
+                  <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                  <svg className="relative w-5 h-5" viewBox="0 0 24 24" fill="none">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Edit Data</span>
+                </button>
+                
+                <button
+                  onClick={handleDownloadExcel}
+                  className="flex-1 group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-[#0f1f3d] to-[#162847] text-white rounded-xl shadow-[0_4px_16px_rgba(15,31,61,0.2)] hover:shadow-[0_6px_24px_rgba(0,201,167,0.2)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
+                >
+                  <span className="absolute inset-0 bg-gradient-to-r from-[#00c9a7]/0 via-[#00c9a7]/10 to-[#00c9a7]/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                  <svg className="relative w-5 h-5" viewBox="0 0 24 24" fill="none">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#00c9a7" strokeWidth="1.5" strokeLinejoin="round"/>
+                    <polyline points="14 2 14 8 20 8" stroke="#00c9a7" strokeWidth="1.5" strokeLinejoin="round"/>
+                    <path d="M8 13h8M8 17h5" stroke="#00c9a7" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                  <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Download Excel</span>
+                </button>
+                
+                <button
+                  onClick={handleDownloadPDF}
+                  className="flex-1 group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-[#00a98c] to-[#00c9a7] text-white rounded-xl shadow-[0_4px_16px_rgba(0,201,167,0.2)] hover:shadow-[0_6px_24px_rgba(0,201,167,0.3)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
+                >
+                  <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                  <svg className="relative w-5 h-5" viewBox="0 0 24 24" fill="none">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
+                    <polyline points="14 2 14 8 20 8" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
+                    <path d="M9 13h6M9 17h6" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                  <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Download PDF</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && editFormData && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.3)] max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 border-b border-blue-500/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-[22px] font-bold text-white font-[Syne,sans-serif]">
+                    Edit Exam Data
+                  </h2>
+                  <p className="text-blue-200 text-sm mt-1 font-[DM_Sans,sans-serif]">
+                    {editFormData.subjectCode} • Semester {editFormData.semester}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditFormData(null);
+                  }}
+                  className="w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center justify-center"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content - Form */}
+            <div className="p-8 overflow-y-auto max-h-[calc(90vh-200px)]">
+              
+              {/* Subject Info (Read-only) */}
+              <div className="mb-6 bg-sky-50 border border-[#00c9a7]/20 rounded-xl p-4">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#6b85a3] mb-2 font-[Syne,sans-serif]">Subject</p>
+                <p className="text-lg font-bold text-[#1a2e4a] font-[Syne,sans-serif]">{editFormData.subjectName}</p>
+              </div>
+
+              {/* Students Enrolled */}
+              <div className="mb-6">
+                <label className="block text-[11px] font-bold tracking-[0.1em] uppercase text-[#6b85a3] mb-2 font-[Syne,sans-serif]">
+                  Students Enrolled <span className="text-[#00c9a7]">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editFormData.studentsEnrolled}
+                  onChange={(e) => updateEditField('studentsEnrolled', e.target.value)}
+                  className="w-full px-4 py-3 text-sm text-[#1a2e4a] bg-sky-50 border border-[#00c9a7]/25 rounded-xl outline-none transition-all duration-200 focus:border-[#00c9a7] focus:shadow-[0_0_0_3px_rgba(0,201,167,0.12)] font-[DM_Sans,sans-serif]"
+                />
+              </div>
+
+              {/* Verification */}
+              <div className="mb-6">
+                <label className="block text-[11px] font-bold tracking-[0.1em] uppercase text-[#6b85a3] mb-2 font-[Syne,sans-serif]">
+                  Permission to use existing Question Paper <span className="text-[#00c9a7]">*</span>
+                </label>
+                <div className="flex gap-3">
+                  {['Yes', 'No'].map((option) => (
+                    <label
+                      key={option}
+                      className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold cursor-pointer border-2 transition-all duration-200 font-[Syne,sans-serif] ${
+                        editFormData.verification === option
+                          ? option === 'Yes'
+                            ? 'bg-[#00c9a7]/15 border-[#00c9a7] text-[#00a98c]'
+                            : 'bg-rose-100 border-rose-400 text-rose-600'
+                          : 'bg-white border-gray-300 text-[#6b85a3] hover:border-[#00c9a7]/50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="verification"
+                        value={option}
+                        checked={editFormData.verification === option}
+                        onChange={(e) => updateEditField('verification', e.target.value)}
+                        className="sr-only"
+                      />
+                      <span className={`w-3 h-3 rounded-full ${
+                        editFormData.verification === option
+                          ? option === 'Yes' ? 'bg-[#00c9a7]' : 'bg-rose-500'
+                          : 'bg-gray-300'
+                      }`} />
+                      {option}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Internal Examiners */}
+              <div className="mb-6">
+                <h3 className="text-[14px] font-bold text-[#1a2e4a] mb-3 font-[Syne,sans-serif]">🎓 Internal Examiners</h3>
+                <div className="space-y-3">
+                  {editFormData.internals.map((internal, idx) => (
+                    <div key={idx} className="bg-gradient-to-br from-sky-50/80 to-emerald-50/40 border border-[#00c9a7]/20 rounded-xl p-4">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-[#6b85a3] mb-2 font-[Syne,sans-serif]">
+                        Internal Examiner #{idx + 1}
+                      </label>
+                      <input
+                        type="text"
+                        value={internal.name}
+                        onChange={(e) => updateInternalExaminer(idx, e.target.value)}
+                        className="w-full px-4 py-2.5 text-sm text-[#1a2e4a] bg-white border border-[#00c9a7]/25 rounded-lg outline-none transition-all duration-200 focus:border-[#00c9a7] focus:shadow-[0_0_0_3px_rgba(0,201,167,0.12)] font-[DM_Sans,sans-serif]"
+                        placeholder="Examiner name"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* External Examiners */}
+              <div className="mb-6">
+                <h3 className="text-[14px] font-bold text-[#1a2e4a] mb-3 font-[Syne,sans-serif]">🏛️ External Examiners</h3>
+                <div className="space-y-4">
+                  {editFormData.externals.map((external, idx) => (
+                    <div key={idx} className="bg-gradient-to-br from-sky-50/80 to-blue-50/40 border border-[#00c9a7]/20 rounded-xl p-4">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#6b85a3] mb-3 font-[Syne,sans-serif]">
+                        External Examiner #{idx + 1}
+                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#6b85a3] mb-1 font-[Syne,sans-serif]">Name</label>
+                          <input
+                            type="text"
+                            value={external.name}
+                            onChange={(e) => updateExternalExaminer(idx, 'name', e.target.value)}
+                            className="w-full px-3 py-2 text-sm text-[#1a2e4a] bg-white border border-[#00c9a7]/25 rounded-lg outline-none focus:border-[#00c9a7] font-[DM_Sans,sans-serif]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#6b85a3] mb-1 font-[Syne,sans-serif]">Experience (years)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={external.yearsOfExperience}
+                            onChange={(e) => updateExternalExaminer(idx, 'yearsOfExperience', e.target.value)}
+                            className="w-full px-3 py-2 text-sm text-[#1a2e4a] bg-white border border-[#00c9a7]/25 rounded-lg outline-none focus:border-[#00c9a7] font-[DM_Sans,sans-serif]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#6b85a3] mb-1 font-[Syne,sans-serif]">Email</label>
+                          <input
+                            type="email"
+                            value={external.email}
+                            onChange={(e) => updateExternalExaminer(idx, 'email', e.target.value)}
+                            className="w-full px-3 py-2 text-sm text-[#1a2e4a] bg-white border border-[#00c9a7]/25 rounded-lg outline-none focus:border-[#00c9a7] font-[DM_Sans,sans-serif]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#6b85a3] mb-1 font-[Syne,sans-serif]">Contact</label>
+                          <input
+                            type="tel"
+                            value={external.contact}
+                            onChange={(e) => updateExternalExaminer(idx, 'contact', e.target.value)}
+                            className="w-full px-3 py-2 text-sm text-[#1a2e4a] bg-white border border-[#00c9a7]/25 rounded-lg outline-none focus:border-[#00c9a7] font-[DM_Sans,sans-serif]"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#6b85a3] mb-1 font-[Syne,sans-serif]">Address</label>
+                          <textarea
+                            rows={2}
+                            value={external.address}
+                            onChange={(e) => updateExternalExaminer(idx, 'address', e.target.value)}
+                            className="w-full px-3 py-2 text-sm text-[#1a2e4a] bg-white border border-[#00c9a7]/25 rounded-lg outline-none focus:border-[#00c9a7] resize-none font-[DM_Sans,sans-serif]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer - Save Button */}
             <div className="bg-sky-50 border-t border-[#00c9a7]/20 px-8 py-5 flex gap-3">
               <button
-                onClick={handleDownloadExcel}
-                className="flex-1 group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-[#0f1f3d] to-[#162847] text-white rounded-xl shadow-[0_4px_16px_rgba(15,31,61,0.2)] hover:shadow-[0_6px_24px_rgba(0,201,167,0.2)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditFormData(null);
+                }}
+                className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl text-[14px] font-bold font-[Syne,sans-serif] transition-colors"
               >
-                <span className="absolute inset-0 bg-gradient-to-r from-[#00c9a7]/0 via-[#00c9a7]/10 to-[#00c9a7]/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                <svg className="relative w-5 h-5" viewBox="0 0 24 24" fill="none">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#00c9a7" strokeWidth="1.5" strokeLinejoin="round"/>
-                  <polyline points="14 2 14 8 20 8" stroke="#00c9a7" strokeWidth="1.5" strokeLinejoin="round"/>
-                  <path d="M8 13h8M8 17h5" stroke="#00c9a7" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
-                <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Download Excel</span>
+                Cancel
               </button>
-              
               <button
-                onClick={handleDownloadPDF}
-                className="flex-1 group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-[#00a98c] to-[#00c9a7] text-white rounded-xl shadow-[0_4px_16px_rgba(0,201,167,0.2)] hover:shadow-[0_6px_24px_rgba(0,201,167,0.3)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
+                onClick={handleSaveChanges}
+                disabled={saving}
+                className={`flex-1 group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-[#00a98c] to-[#00c9a7] text-white rounded-xl shadow-[0_4px_16px_rgba(0,201,167,0.2)] hover:shadow-[0_6px_24px_rgba(0,201,167,0.3)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden ${
+                  saving ? 'opacity-70 cursor-not-allowed' : ''
+                }`}
               >
                 <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                <svg className="relative w-5 h-5" viewBox="0 0 24 24" fill="none">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
-                  <polyline points="14 2 14 8 20 8" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
-                  <path d="M9 13h6M9 17h6" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
-                <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Download PDF</span>
+                {saving ? (
+                  <>
+                    <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="3"/>
+                      <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                    </svg>
+                    <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="relative w-5 h-5" viewBox="0 0 24 24" fill="none">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
+                      <polyline points="17 21 17 13 7 13 7 21" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
+                      <polyline points="7 3 7 8 15 8" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
+                    </svg>
+                    <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Save Changes</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
