@@ -8,6 +8,10 @@ const internalExaminerSchema = new mongoose.Schema(
       trim: true,
       unique: true,
     },
+    password: {
+      type: String,
+      required: [true, "Password is required"],
+    },
   },
   { timestamps: true }
 );

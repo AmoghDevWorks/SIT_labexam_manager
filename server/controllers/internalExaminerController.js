@@ -5,10 +5,14 @@ const InternalExaminer = require("../models/internalExaminer");
 // =======================
 exports.createInternalExaminer = async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, password } = req.body;
 
     if (!name) {
       return res.status(400).json({ message: "Name is required" });
+    }
+
+    if (!password) {
+      return res.status(400).json({ message: "Password is required" });
     }
 
     const existing = await InternalExaminer.findOne({ name });
@@ -17,7 +21,7 @@ exports.createInternalExaminer = async (req, res) => {
       return res.status(400).json({ message: "Examiner already exists" });
     }
 
-    const examiner = await InternalExaminer.create({ name });
+    const examiner = await InternalExaminer.create({ name, password });
 
     res.status(201).json({
       message: "Internal Examiner created successfully",
@@ -90,6 +94,39 @@ exports.deleteInternalExaminer = async (req, res) => {
 
     res.status(200).json({
       message: "Internal Examiner deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// =======================
+// LOGIN INTERNAL EXAMINER
+// =======================
+exports.loginInternalExaminer = async (req, res) => {
+  try {
+    const { name, password } = req.body;
+
+    if (!name || !password) {
+      return res.status(400).json({ message: "Name and password are required" });
+    }
+
+    const examiner = await InternalExaminer.findOne({ name });
+
+    if (!examiner) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    if (examiner.password !== password) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    res.status(200).json({
+      message: "Login successful",
+      examiner: {
+        id: examiner._id,
+        name: examiner.name,
+      },
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

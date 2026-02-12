@@ -6,6 +6,7 @@ import {
 } from "react-router-dom";
 
 import { AdminProvider } from "./utils/adminContext";
+import { UserProvider } from "./utils/userContext";
 import ProtectedRoute from "./utils/ProtectedRoute";
 
 
@@ -89,7 +90,9 @@ const router = createBrowserRouter([
 const App = () => {
   return(
     <AdminProvider>
-      <RouterProvider router={router} />
+      <UserProvider>
+        <RouterProvider router={router} />
+      </UserProvider>
     </AdminProvider>
   )
 };
