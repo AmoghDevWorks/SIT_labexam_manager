@@ -37,3 +37,17 @@
 | GET | `/api/internal-examiners` | Retrieve all internal examiners sorted by newest first |
 | PUT | `/api/internal-examiners/:id` | Update an internal examiner's name by its MongoDB ID. Prevents duplicate names |
 | DELETE | `/api/internal-examiners/:id` | Delete an internal examiner by its MongoDB ID |
+
+---
+
+## Exam Data Routes — `/api/exam-data`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/exam-data` | Create new exam data for a single subject. Requires `semester`, `subjectName`, `subjectCode`, `studentsEnrolled`, `verification`, `internals`, and `externals` fields |
+| GET | `/api/exam-data` | Retrieve all exam data entries sorted by semester and subject name |
+| GET | `/api/exam-data/:id` | Retrieve a single exam data entry by its MongoDB ID |
+| GET | `/api/exam-data/semester/:semester` | Retrieve all exam data entries for a specific semester, sorted by subject name |
+| GET | `/api/exam-data/semester/:semester/subject/:subjectName` | Retrieve exam data entries for a specific semester and subject combination |
+| PUT | `/api/exam-data/:id` | Update an exam data entry by its MongoDB ID. Can update semester, subject details, examiners, etc. |
+| DELETE | `/api/exam-data/:id` | Delete an exam data entry by its MongoDB ID |

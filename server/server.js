@@ -6,6 +6,7 @@ const connectDB = require("./db/config");
 const adminRoutes = require("./routes/adminRoutes");
 const subjectRoutes = require("./routes/subjectRoutes");
 const internalExaminerRoutes = require("./routes/internalExaminerRoutes");
+const examDataRoutes = require("./routes/examDataRoutes");
 
 const app = express();
 
@@ -47,6 +48,7 @@ app.get("/", (req, res) => {
 app.use("/api/admin", adminRoutes);
 app.use("/api/subjects", subjectRoutes);
 app.use("/api/internal-examiners", internalExaminerRoutes);
+app.use("/api/exam-data", examDataRoutes);
 
 const PORT = process.env.PORT || 5000;
 

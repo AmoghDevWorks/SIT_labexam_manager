@@ -1,6 +1,9 @@
 import React, { useState, useCallback } from "react";
 import Subject from "./Subject";
-import { downloadExcel, downloadPDF } from "../../utils/downloadUtils";
+import { validateData } from "../../utils/downloadUtils";
+import axios from "axios";
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const Hero = () => {
   const [inputVal, setInputVal] = useState("1");
@@ -8,6 +11,10 @@ const Hero = () => {
 
   // Store all subjects' data keyed by index
   const [subjectsData, setSubjectsData] = useState({});
+
+  // Save state
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const handleChange = (e) => {
     const raw = e.target.value;
@@ -23,6 +30,60 @@ const Hero = () => {
     setSubjectsData((prev) => ({ ...prev, [index]: data }));
   }, []);
 
+  // Save exam data to backend
+  const handleSaveExamData = async () => {
+    // Validate all data first
+    const errors = validateData(subjectsData, subjectCount);
+    
+    if (errors.length > 0) {
+      alert(`Please fill all required fields:\n\n${errors.join('\n')}`);
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setSaveSuccess(false);
+
+      // Convert subjectsData object to array
+      const subjectsArray = Object.values(subjectsData).slice(0, subjectCount);
+
+      // Save each subject as a separate exam data entry
+      const savePromises = subjectsArray.map(subject => {
+        const examDataEntry = {
+          semester: subject.semester,
+          subjectName: subject.subjectName,
+          subjectCode: subject.subjectCode,
+          studentsEnrolled: parseInt(subject.studentsEnrolled, 10),
+          verification: subject.verification,
+          internals: subject.internals,
+          externals: subject.externals.map(ext => ({
+            ...ext,
+            yearsOfExperience: parseInt(ext.yearsOfExperience, 10)
+          }))
+        };
+        
+        return axios.post(`${BACKEND_URL}/api/exam-data`, examDataEntry);
+      });
+
+      const responses = await Promise.all(savePromises);
+      
+      console.log('Exam data saved successfully:', responses.map(r => r.data));
+      setSaveSuccess(true);
+      
+      // Show success message
+      alert(`✅ Successfully saved ${subjectsArray.length} subject(s) data!`);
+
+      // Reset success state after 3 seconds
+      setTimeout(() => setSaveSuccess(false), 3000);
+      
+    } catch (error) {
+      console.error('Error saving exam data:', error);
+      alert(`❌ Error saving exam data: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen font-sans bg-gradient-to-br from-sky-100 via-blue-100 to-emerald-50">
 
@@ -36,7 +97,7 @@ const Hero = () => {
               Subject Manager
             </h1>
             <p className="text-sm text-[#6b85a3] mt-1 font-light">
-              Fill in all subjects, then export the Panel of Examiners sheet
+              Fill in all subjects and save the Panel of Examiners data
             </p>
           </div>
 
@@ -99,77 +160,60 @@ const Hero = () => {
           ))}
         </div>
 
-        {/* ── Download Buttons ── */}
-        <div className="mt-14 flex justify-center gap-4 flex-wrap">
-          {/* Excel Download Button */}
+        {/* ── Save Button ── */}
+        <div className="mt-14 flex justify-center">
           <button
-            onClick={() => downloadExcel(subjectsData, subjectCount)}
-            className="group relative flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-[#0f1f3d] to-[#162847] text-white rounded-2xl shadow-[0_8px_32px_rgba(15,31,61,0.25)] hover:shadow-[0_12px_40px_rgba(0,201,167,0.2)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
+            onClick={handleSaveExamData}
+            disabled={saving}
+            className={`group relative flex items-center gap-3 px-10 py-5 bg-gradient-to-r from-[#00a98c] to-[#00c9a7] text-white rounded-2xl shadow-[0_8px_32px_rgba(0,201,167,0.25)] hover:shadow-[0_12px_40px_rgba(0,201,167,0.35)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden ${
+              saving ? 'opacity-70 cursor-not-allowed' : ''
+            } ${
+              saveSuccess ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : ''
+            }`}
           >
             {/* Shimmer */}
-            <span className="absolute inset-0 bg-gradient-to-r from-[#00c9a7]/0 via-[#00c9a7]/10 to-[#00c9a7]/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+            {!saving && (
+              <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+            )}
 
             {/* Icon */}
-            <span className="relative w-10 h-10 rounded-xl bg-[#00c9a7]/15 border border-[#00c9a7]/30 flex items-center justify-center shrink-0">
-              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#00c9a7" strokeWidth="1.5" strokeLinejoin="round"/>
-                <polyline points="14 2 14 8 20 8" stroke="#00c9a7" strokeWidth="1.5" strokeLinejoin="round"/>
-                <path d="M8 13h8M8 17h5" stroke="#00c9a7" strokeWidth="1.5" strokeLinecap="round"/>
-                <path d="M12 10v4l2-2" stroke="#00c9a7" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+            <span className="relative w-12 h-12 rounded-xl bg-white/15 border border-white/30 flex items-center justify-center shrink-0">
+              {saving ? (
+                <svg className="animate-spin w-6 h-6" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="3"/>
+                  <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                </svg>
+              ) : saveSuccess ? (
+                <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none">
+                  <path d="M5 13l4 4L19 7" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
+                  <polyline points="17 21 17 13 7 13 7 21" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
+                  <polyline points="7 3 7 8 15 8" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
+                </svg>
+              )}
             </span>
 
             <span className="relative">
-              <span className="block text-[15px] font-bold tracking-wide font-[Syne,sans-serif]">
-                Download Excel
-              </span>
-              <span className="block text-[10px] text-[#00c9a7]/70 tracking-widest uppercase mt-0.5 font-[DM_Sans,sans-serif]">
-                Panel of Examiners · .xlsx
-              </span>
-            </span>
-
-            <svg
-              className="relative w-4 h-4 text-[#00c9a7] ml-2 group-hover:translate-x-1 transition-transform duration-200"
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-              strokeLinecap="round" strokeLinejoin="round"
-            >
-              <path d="M5 12h14M13 6l6 6-6 6" />
-            </svg>
-          </button>
-
-          {/* PDF Download Button */}
-          <button
-            onClick={() => downloadPDF(subjectsData, subjectCount)}
-            className="group relative flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-[#00a98c] to-[#00c9a7] text-white rounded-2xl shadow-[0_8px_32px_rgba(0,201,167,0.25)] hover:shadow-[0_12px_40px_rgba(0,201,167,0.35)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
-          >
-            {/* Shimmer */}
-            <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-
-            {/* Icon */}
-            <span className="relative w-10 h-10 rounded-xl bg-white/15 border border-white/30 flex items-center justify-center shrink-0">
-              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
-                <polyline points="14 2 14 8 20 8" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
-                <path d="M9 13h6M9 17h6" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-            </span>
-
-            <span className="relative">
-              <span className="block text-[15px] font-bold tracking-wide font-[Syne,sans-serif]">
-                Download PDF
+              <span className="block text-[16px] font-bold tracking-wide font-[Syne,sans-serif]">
+                {saving ? 'Saving...' : saveSuccess ? 'Saved Successfully!' : 'Save Exam Data'}
               </span>
               <span className="block text-[10px] text-white/70 tracking-widest uppercase mt-0.5 font-[DM_Sans,sans-serif]">
-                Panel of Examiners · .pdf
+                {saving ? 'Please wait' : saveSuccess ? 'Data stored successfully' : 'Store Panel of Examiners'}
               </span>
             </span>
 
-            <svg
-              className="relative w-4 h-4 text-white ml-2 group-hover:translate-x-1 transition-transform duration-200"
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-              strokeLinecap="round" strokeLinejoin="round"
-            >
-              <path d="M5 12h14M13 6l6 6-6 6" />
-            </svg>
+            {!saving && !saveSuccess && (
+              <svg
+                className="relative w-5 h-5 text-white ml-2 group-hover:translate-x-1 transition-transform duration-200"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                strokeLinecap="round" strokeLinejoin="round"
+              >
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            )}
           </button>
         </div>
 
