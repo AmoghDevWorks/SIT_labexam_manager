@@ -476,6 +476,173 @@ const ManageExaminersModal = ({ subject, onClose }) => {
 };
 
 /* ════════════════════════════════════════════
+   CHECK DOCUMENTS MODAL
+════════════════════════════════════════════ */
+const CheckDocumentsModal = ({ subject, onClose }) => {
+  const overlayRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [documents, setDocuments] = useState({ syllabus: null, modelQP: null });
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      try {
+        const response = await axios.get(
+          `${BACKEND_URL}/api/documents/check/${subject.semester}/${subject.code}`
+        );
+        setDocuments(response.data);
+      } catch (error) {
+        console.error("Error fetching documents:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (subject.semester && subject.code) {
+      fetchDocuments();
+    } else {
+      setLoading(false);
+    }
+  }, [subject]);
+
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return bytes + ' B';
+    else if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    else return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  };
+
+  const DocumentCard = ({ title, icon, document }) => (
+    <div className="bg-gradient-to-br from-sky-50 to-emerald-50/40 border border-[#00c9a7]/20 rounded-xl p-4">
+      <div className="flex items-center gap-2.5 mb-3">
+        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#00c9a7] to-[#00a98c] flex items-center justify-center text-white text-lg shadow-[0_4px_10px_rgba(0,201,167,0.25)] shrink-0">
+          {icon}
+        </div>
+        <h4 className="text-[13px] font-bold text-[#1a2e4a] font-[Syne,sans-serif]">{title}</h4>
+      </div>
+
+      {document ? (
+        <div className="space-y-2.5">
+          <div className="flex items-start justify-between gap-2 p-3 bg-white/90 border border-emerald-200/60 rounded-lg">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-semibold text-emerald-800 truncate font-[Syne,sans-serif]">
+                  {document.filename}
+                </p>
+                <p className="text-[10px] text-emerald-600 font-[DM_Sans,sans-serif]">
+                  {formatFileSize(document.size)} • {formatDate(document.uploadedAt)}
+                </p>
+              </div>
+            </div>
+            <a
+              href={`${BACKEND_URL}${document.downloadUrl}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold text-emerald-700 bg-white border border-emerald-300 rounded-lg hover:bg-emerald-50 transition-colors font-[Syne,sans-serif] shrink-0"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download
+            </a>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-6 text-center bg-white/60 border border-amber-200/50 rounded-lg">
+          <svg viewBox="0 0 24 24" className="w-7 h-7 text-amber-500 mb-2" fill="none">
+            <path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <p className="text-[12px] text-amber-700 font-semibold font-[Syne,sans-serif]">
+            Yet to be uploaded
+          </p>
+          <p className="text-[10px] text-amber-600 mt-0.5 font-[DM_Sans,sans-serif]">
+            No document available
+          </p>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div
+      ref={overlayRef}
+      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0f1f3d]/55 backdrop-blur-sm"
+      style={{ animation: "overlayFadeIn 0.18s ease both" }}
+    >
+      <div
+        className="relative w-full max-w-[560px] bg-white rounded-2xl shadow-[0_28px_80px_rgba(15,31,61,0.28)] overflow-hidden"
+        style={{ animation: "modalPopIn 0.28s cubic-bezier(0.34,1.56,0.64,1) both" }}
+      >
+        <div className="h-1.5 w-full bg-gradient-to-r from-[#0f1f3d] via-[#00c9a7] to-[#00a98c]" />
+
+        <div className="px-7 pt-6 pb-4">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h2 className="text-[16px] font-extrabold text-[#1a2e4a] font-[Syne,sans-serif] leading-tight">
+                Check Documents
+              </h2>
+              <p className="text-[12px] text-[#6b85a3] mt-1 font-[DM_Sans,sans-serif]">
+                {subject.name} ({subject.code})
+                {subject.semester && (
+                  <span className="ml-2 px-2 py-0.5 rounded-md bg-[#0f1f3d]/10 text-[#0f1f3d] text-[10px] font-bold">
+                    Semester {subject.semester}
+                  </span>
+                )}
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-[#6b85a3] hover:bg-sky-100 hover:text-[#1a2e4a] transition-all duration-150 shrink-0"
+            >
+              <svg viewBox="0 0 18 18" className="w-3.5 h-3.5" fill="none">
+                <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="h-px bg-gradient-to-r from-transparent via-[#00c9a7]/20 to-transparent mx-7 mb-1" />
+
+        <div className="px-7 py-5">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Spinner />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <DocumentCard title="Syllabus" icon="📄" document={documents.syllabus} />
+              <DocumentCard title="Model Question Paper" icon="📝" document={documents.modelQP} />
+            </div>
+          )}
+        </div>
+
+        <div className="px-7 py-4 bg-sky-50 border-t border-[#00c9a7]/10">
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 text-[13px] font-semibold text-[#6b85a3] bg-white border border-[#00c9a7]/20 rounded-xl hover:bg-sky-100 hover:text-[#1a2e4a] transition-all font-[Syne,sans-serif]"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ════════════════════════════════════════════
    DELETE CONFIRM MODAL
 ════════════════════════════════════════════ */
 const DeleteModal = ({ subject, onClose, onConfirm, loading }) => {
@@ -546,7 +713,7 @@ const DeleteModal = ({ subject, onClose, onConfirm, loading }) => {
 /* ════════════════════════════════════════════
    SUBJECT CARD
 ════════════════════════════════════════════ */
-const SubjectCard = ({ subject, index, onEdit, onDelete, onManageExaminers }) => {
+const SubjectCard = ({ subject, index, onEdit, onDelete, onManageExaminers, onCheckDocuments }) => {
   const [from, to] = CARD_ACCENTS[index % CARD_ACCENTS.length];
   const initials = (subject?.name ?? "")
   .split(/\s+/)
@@ -598,8 +765,8 @@ const SubjectCard = ({ subject, index, onEdit, onDelete, onManageExaminers }) =>
           </div>
         </div>
 
-        {/* Action rows — slides in on hover */}
-        <div className="mt-4 pt-3.5 border-t border-[#00c9a7]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 space-y-2">
+        {/* Action rows — always visible */}
+        <div className="mt-4 pt-3.5 border-t border-[#00c9a7]/10 space-y-2">
           {/* Examiners button - full width */}
           <button
             onClick={() => onManageExaminers(subject)}
@@ -613,6 +780,20 @@ const SubjectCard = ({ subject, index, onEdit, onDelete, onManageExaminers }) =>
             Manage Examiners
           </button>
           
+          {/* Check Documents button - full width */}
+          <button
+            onClick={() => onCheckDocuments(subject)}
+            className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold text-[#0f1f3d] bg-[#0f1f3d]/10 border border-[#0f1f3d]/20 rounded-lg hover:bg-[#0f1f3d]/20 transition-all font-[Syne,sans-serif]"
+            title="Check uploaded documents"
+          >
+            <svg viewBox="0 0 14 14" className="w-3 h-3" fill="none">
+              <path d="M8.5 1.5H3.5a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V5L8.5 1.5z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+              <path d="M8.5 1.5V5h3.5" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+              <path d="M5 7h4M5 9.5h4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+            </svg>
+            Check Documents
+          </button>
+
           {/* Edit and Delete buttons - side by side */}
           <div className="flex items-center gap-2">
             <button
@@ -729,7 +910,7 @@ const ManageSubject = () => {
   const [fetchLoading, setFetchLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
 
-  const [modal, setModal] = useState(null); // null | "add" | "edit" | "delete" | "manage-examiners"
+  const [modal, setModal] = useState(null); // null | "add" | "edit" | "delete" | "manage-examiners" | "check-documents"
   const [activeSubject, setActiveSubject] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
 
@@ -1078,6 +1259,7 @@ const ManageSubject = () => {
                               onEdit={(s) => { setActiveSubject(s); setModal("edit"); }}
                               onDelete={(s) => { setActiveSubject(s); setModal("delete"); }}
                               onManageExaminers={(s) => { setActiveSubject(s); setModal("manage-examiners"); }}
+                              onCheckDocuments={(s) => { setActiveSubject(s); setModal("check-documents"); }}
                             />
                           ))}
                         </div>
@@ -1137,6 +1319,14 @@ const ManageSubject = () => {
       {/* ── Manage Examiners Modal ── */}
       {modal === "manage-examiners" && activeSubject && (
         <ManageExaminersModal
+          subject={activeSubject}
+          onClose={() => { setModal(null); setActiveSubject(null); }}
+        />
+      )}
+
+      {/* ── Check Documents Modal ── */}
+      {modal === "check-documents" && activeSubject && (
+        <CheckDocumentsModal
           subject={activeSubject}
           onClose={() => { setModal(null); setActiveSubject(null); }}
         />
