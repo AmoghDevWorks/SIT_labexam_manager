@@ -8,6 +8,7 @@ const subjectRoutes = require("./routes/subjectRoutes");
 const internalExaminerRoutes = require("./routes/internalExaminerRoutes");
 const examDataRoutes = require("./routes/examDataRoutes");
 const subjectAssignmentRoutes = require("./routes/subjectAssignmentRoutes");
+const documentRoutes = require("./routes/documentRoutes");
 
 const app = express();
 
@@ -40,6 +41,10 @@ app.use(
 // Middleware
 app.use(express.json());
 
+// Serve static files from uploads directory
+const path = require("path");
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 // Root Route
 app.get("/", (req, res) => {
   res.send("Server running 🚀");
@@ -51,6 +56,7 @@ app.use("/api/subjects", subjectRoutes);
 app.use("/api/internal-examiners", internalExaminerRoutes);
 app.use("/api/exam-data", examDataRoutes);
 app.use("/api/subject-assignments", subjectAssignmentRoutes);
+app.use("/api/documents", documentRoutes);
 
 const PORT = process.env.PORT || 5000;
 
