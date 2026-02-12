@@ -325,8 +325,8 @@ const ExaminerCard = ({ examiner, index, onEdit, onDelete }) => {
           </div>
         </div>
 
-        {/* Action row — slides in on hover */}
-        <div className="flex items-center gap-2 mt-4 pt-3.5 border-t border-[#00c9a7]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        {/* Action row — always visible */}
+        <div className="flex items-center gap-2 mt-4 pt-3.5 border-t border-[#00c9a7]/10">
           <button
             onClick={() => onEdit(examiner)}
             className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-bold text-[#00a98c] bg-[#00c9a7]/10 border border-[#00c9a7]/20 rounded-lg hover:bg-[#00c9a7]/20 transition-all font-[Syne,sans-serif]"
