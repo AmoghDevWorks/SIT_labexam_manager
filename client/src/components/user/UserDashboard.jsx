@@ -7,7 +7,7 @@ import UploadDocs from './uploadDocs/UploadDocs';
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState('hero'); // 'hero' | 'upload' | 'docs'
-  const { userUid } = useUser();
+  const { userUid, setUserUid, setUserName } = useUser();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -16,43 +16,63 @@ const UserDashboard = () => {
     }
   }, [userUid, navigate]);
 
+  const handleLogout = () => {
+    setUserUid(null);
+    setUserName(null);
+    navigate('/');
+  };
+
   if (!userUid) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-100 to-emerald-50">
       {/* Toggle Section */}
       <div className="sticky top-0 z-50 bg-gradient-to-r from-[#0f1f3d] to-[#162847] shadow-[0_4px_24px_rgba(15,31,61,0.25)]">
-        <div className="max-w-[960px] mx-auto px-6 py-4">
-          <div className="flex items-center justify-center gap-2 bg-[#1a2e4a]/30 p-1.5 rounded-xl border border-[#00c9a7]/20 backdrop-blur-sm w-fit mx-auto">
+        <div className="max-w-[960px] mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
+            <div className="flex items-center justify-center gap-1.5 sm:gap-2 bg-[#1a2e4a]/30 p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-[#00c9a7]/20 backdrop-blur-sm w-full md:w-auto">
+              <button
+                onClick={() => setActiveTab('hero')}
+                className={`relative flex-1 md:flex-none px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold tracking-wide transition-all duration-300 font-[Syne,sans-serif] ${
+                  activeTab === 'hero'
+                    ? 'bg-gradient-to-r from-[#00c9a7] to-[#00a98c] text-white shadow-[0_4px_16px_rgba(0,201,167,0.4)]'
+                    : 'text-[#00c9a7]/60 hover:text-[#00c9a7] hover:bg-[#00c9a7]/10'
+                }`}
+              >
+                Create New
+              </button>
+              <button
+                onClick={() => setActiveTab('upload')}
+                className={`relative flex-1 md:flex-none px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold tracking-wide transition-all duration-300 font-[Syne,sans-serif] ${
+                  activeTab === 'upload'
+                    ? 'bg-gradient-to-r from-[#00c9a7] to-[#00a98c] text-white shadow-[0_4px_16px_rgba(0,201,167,0.4)]'
+                    : 'text-[#00c9a7]/60 hover:text-[#00c9a7] hover:bg-[#00c9a7]/10'
+                }`}
+              >
+                Upload Excel
+              </button>
+              <button
+                onClick={() => setActiveTab('docs')}
+                className={`relative flex-1 md:flex-none px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold tracking-wide transition-all duration-300 font-[Syne,sans-serif] ${
+                  activeTab === 'docs'
+                    ? 'bg-gradient-to-r from-[#00c9a7] to-[#00a98c] text-white shadow-[0_4px_16px_rgba(0,201,167,0.4)]'
+                    : 'text-[#00c9a7]/60 hover:text-[#00c9a7] hover:bg-[#00c9a7]/10'
+                }`}
+              >
+                Upload Documents
+              </button>
+            </div>
+            
+            {/* Logout Button */}
             <button
-              onClick={() => setActiveTab('hero')}
-              className={`relative px-6 py-2.5 rounded-lg text-sm font-bold tracking-wide transition-all duration-300 font-[Syne,sans-serif] ${
-                activeTab === 'hero'
-                  ? 'bg-gradient-to-r from-[#00c9a7] to-[#00a98c] text-white shadow-[0_4px_16px_rgba(0,201,167,0.4)]'
-                  : 'text-[#00c9a7]/60 hover:text-[#00c9a7] hover:bg-[#00c9a7]/10'
-              }`}
+              onClick={handleLogout}
+              className="w-full md:w-auto flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold text-white bg-rose-500/90 border border-rose-400/30 hover:bg-rose-600 hover:shadow-[0_4px_16px_rgba(244,63,94,0.4)] transition-all duration-300 font-[Syne,sans-serif]"
+              title="Logout"
             >
-              Create New
-            </button>
-            <button
-              onClick={() => setActiveTab('upload')}
-              className={`relative px-6 py-2.5 rounded-lg text-sm font-bold tracking-wide transition-all duration-300 font-[Syne,sans-serif] ${
-                activeTab === 'upload'
-                  ? 'bg-gradient-to-r from-[#00c9a7] to-[#00a98c] text-white shadow-[0_4px_16px_rgba(0,201,167,0.4)]'
-                  : 'text-[#00c9a7]/60 hover:text-[#00c9a7] hover:bg-[#00c9a7]/10'
-              }`}
-            >
-              Upload Excel
-            </button>
-            <button
-              onClick={() => setActiveTab('docs')}
-              className={`relative px-6 py-2.5 rounded-lg text-sm font-bold tracking-wide transition-all duration-300 font-[Syne,sans-serif] ${
-                activeTab === 'docs'
-                  ? 'bg-gradient-to-r from-[#00c9a7] to-[#00a98c] text-white shadow-[0_4px_16px_rgba(0,201,167,0.4)]'
-                  : 'text-[#00c9a7]/60 hover:text-[#00c9a7] hover:bg-[#00c9a7]/10'
-              }`}
-            >
-              Upload Documents
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Logout
             </button>
           </div>
         </div>
