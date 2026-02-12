@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { downloadExcel, downloadPDF } from '../utils/downloadUtils';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const ManageExamData = () => {
+  const navigate = useNavigate();
   const [selectedSemester, setSelectedSemester] = useState('');
   const [subjects, setSubjects] = useState([]);
   const [examData, setExamData] = useState([]);
@@ -108,25 +110,59 @@ const ManageExamData = () => {
           background-repeat: no-repeat;
           background-position: right 14px center;
         }
+        
+        @keyframes pageIn {
+          from{opacity:0;transform:translateY(10px)}
+          to{opacity:1;transform:translateY(0)}
+        }
       `}</style>
 
-      <div className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-100 to-emerald-50 p-6">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="bg-white/85 backdrop-blur-md border border-[#00c9a7]/25 rounded-2xl px-9 py-8 mb-8 shadow-[0_8px_32px_rgba(15,31,61,0.12)]">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#00c9a7] to-[#00a98c] flex items-center justify-center text-white text-xl shadow-[0_4px_10px_rgba(0,201,167,0.3)]">
-                📊
-              </div>
-              <div>
-                <h1 className="text-[28px] font-extrabold text-[#1a2e4a] leading-tight tracking-tight font-[Syne,sans-serif]">
-                  Manage Exam Data
-                </h1>
-                <p className="text-sm text-[#6b85a3] mt-1 font-[DM_Sans,sans-serif]">
-                  View and download exam data by semester
-                </p>
-              </div>
+      <div className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-100 to-emerald-50 font-[DM_Sans,sans-serif]">
+        
+        {/* Header */}
+        <header className="sticky top-0 z-40 flex items-center justify-between px-8 h-[68px] bg-gradient-to-r from-[#0f1f3d] to-[#162847] shadow-[0_4px_24px_rgba(15,31,61,0.25)]">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(-1)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6b85a3] hover:text-[#00c9a7] hover:bg-white/5 transition-all duration-150"
+            >
+              <svg viewBox="0 0 18 18" className="w-4 h-4" fill="none">
+                <path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            <div className="w-px h-5 bg-white/10" />
+            <div className="w-8 h-8 rounded-lg bg-[#00c9a7]/15 border border-[#00c9a7]/30 flex items-center justify-center">
+              <svg viewBox="0 0 18 18" className="w-4 h-4" fill="none">
+                <path d="M4 4h10M4 9h10M4 14h6" stroke="#00c9a7" strokeWidth="1.4" strokeLinecap="round"/>
+                <rect x="2" y="2" width="14" height="14" rx="2" stroke="#00c9a7" strokeWidth="1.4" fill="none"/>
+              </svg>
             </div>
+            <span className="text-white text-[14px] font-bold tracking-wide font-[Syne,sans-serif]">
+              Exam Data
+            </span>
+          </div>
+          <span className="text-[#00c9a7] text-[11px] font-bold tracking-widest uppercase px-3.5 py-1.5 rounded-full border border-[#00c9a7]/40 bg-[#00c9a7]/10 font-[Syne,sans-serif]">
+            Academic Portal
+          </span>
+        </header>
+
+        {/* Body */}
+        <main
+          className="w-full max-w-6xl mx-auto px-6 py-10"
+          style={{ animation: "pageIn 0.3s ease both" }}
+        >
+          {/* Page Title */}
+          <div className="mb-8">
+            <h1 className="text-[clamp(24px,4vw,32px)] font-extrabold text-[#1a2e4a] leading-tight tracking-tight font-[Syne,sans-serif]">
+              Manage Exam Data
+            </h1>
+            <p className="text-sm text-[#6b85a3] mt-1 font-light">
+              View and download exam data by semester
+            </p>
+          </div>
+
+          {/* Semester Filter Card */}
+          <div className="bg-white/85 backdrop-blur-md border border-[#00c9a7]/25 rounded-2xl px-9 py-8 mb-8 shadow-[0_8px_32px_rgba(15,31,61,0.12)]">
 
             {/* Semester Selector */}
             <div className="max-w-md">
@@ -246,7 +282,7 @@ const ManageExamData = () => {
               </p>
             </div>
           )}
-        </div>
+        </main>
       </div>
 
       {/* Modal */}
