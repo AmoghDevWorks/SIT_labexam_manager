@@ -1113,7 +1113,7 @@ const ManageSubject = () => {
             </span>
           </div>
           <span className="text-[#00c9a7] text-[11px] font-bold tracking-widest uppercase px-3.5 py-1.5 rounded-full border border-[#00c9a7]/40 bg-[#00c9a7]/10 font-[Syne,sans-serif]">
-            Academic Portal
+            Admin Portal
           </span>
         </header>
 
