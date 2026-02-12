@@ -5,9 +5,9 @@ const Subject = require("../models/subject");
 // =======================
 exports.createSubject = async (req, res) => {
   try {
-    const { subjectName, subjectCode } = req.body;
+    const { subjectName, subjectCode, semester } = req.body;
 
-    if (!subjectName || !subjectCode) {
+    if (!subjectName || !subjectCode || !semester) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -20,6 +20,7 @@ exports.createSubject = async (req, res) => {
     const subject = await Subject.create({
       subjectName,
       subjectCode,
+      semester,
     });
 
     res.status(201).json({
@@ -66,11 +67,11 @@ exports.getSubjectById = async (req, res) => {
 // =======================
 exports.updateSubject = async (req, res) => {
   try {
-    const { subjectName, subjectCode } = req.body;
+    const { subjectName, subjectCode, semester } = req.body;
 
     const subject = await Subject.findByIdAndUpdate(
       req.params.id,
-      { subjectName, subjectCode },
+      { subjectName, subjectCode, semester },
       { new: true, runValidators: true }
     );
 

@@ -14,6 +14,11 @@ const subjectSchema = new mongoose.Schema(
       uppercase: true,
       trim: true,
     },
+    semester: {
+      type: String,
+      required: true,
+      trim: true,
+    },
   },
   { timestamps: true }
 );

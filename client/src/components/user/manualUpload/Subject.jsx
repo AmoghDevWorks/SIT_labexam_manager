@@ -129,45 +129,47 @@ const DividerLine = () => (
    Verification Radio
 ───────────────────────────────────────────── */
 const VerificationRadio = ({ value, onChange, name }) => (
-  <div className="flex items-center gap-2 flex-wrap">
-    <span className="text-[11px] font-bold tracking-[0.08em] uppercase text-[#6b85a3] font-[Syne,sans-serif]">
-      Permission to use already existing Question Paper with same code (Yes / No) <span className="text-green-400">*</span>
-    </span>
-    <div className="flex gap-2">
-      {["Yes", "No"].map((opt) => {
-        const isChecked = value === opt;
-        return (
-          <label
-            key={opt}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold cursor-pointer border transition-all duration-200 font-[Syne,sans-serif] ${
-              isChecked
-                ? opt === "Yes"
-                  ? "bg-[#00c9a7]/15 border-[#00c9a7] text-[#00a98c]"
-                  : "bg-rose-50 border-rose-300 text-rose-500"
-                : "bg-sky-50 border-[#00c9a7]/20 text-[#6b85a3] hover:border-[#00c9a7]/50"
-            }`}
-          >
-            <input
-              type="radio"
-              name={name}
-              value={opt}
-              checked={isChecked}
-              onChange={() => onChange(opt)}
-              className="sr-only"
-            />
-            <span
-              className={`w-2 h-2 rounded-full shrink-0 transition-all ${
+  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl p-4 shadow-[0_4px_16px_rgba(251,146,60,0.15)]">
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="text-[12px] font-bold tracking-[0.08em] uppercase text-amber-900 font-[Syne,sans-serif]">
+        Permission to use already existing Question Paper with same code (Yes / No) <span className="text-rose-500">*</span>
+      </span>
+      <div className="flex gap-2">
+        {["Yes", "No"].map((opt) => {
+          const isChecked = value === opt;
+          return (
+            <label
+              key={opt}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 transition-all duration-200 font-[Syne,sans-serif] ${
                 isChecked
                   ? opt === "Yes"
-                    ? "bg-[#00c9a7]"
-                    : "bg-rose-400"
-                  : "bg-[#6b85a3]/30"
+                    ? "bg-[#00c9a7]/15 border-[#00c9a7] text-[#00a98c] shadow-md"
+                    : "bg-rose-100 border-rose-400 text-rose-600 shadow-md"
+                  : "bg-white border-amber-300 text-[#6b85a3] hover:border-amber-400"
               }`}
-            />
-            {opt}
-          </label>
-        );
-      })}
+            >
+              <input
+                type="radio"
+                name={name}
+                value={opt}
+                checked={isChecked}
+                onChange={() => onChange(opt)}
+                className="sr-only"
+              />
+              <span
+                className={`w-2.5 h-2.5 rounded-full shrink-0 transition-all ${
+                  isChecked
+                    ? opt === "Yes"
+                      ? "bg-[#00c9a7]"
+                      : "bg-rose-500"
+                    : "bg-amber-300"
+                }`}
+              />
+              {opt}
+            </label>
+          );
+        })}
+      </div>
     </div>
   </div>
 );
@@ -258,6 +260,23 @@ const ExternalExaminerCard = ({ index, data, onChange, subjectId }) => {
           <Input placeholder="Dr. Examiner Name" value={data.name} onChange={(e) => field("name")(e.target.value)} required />
         </div>
         <div>
+          <Label required>Years of Experience</Label>
+          <Input 
+            type="number" 
+            min="0"
+            placeholder="e.g. 10" 
+            value={data.yearsOfExperience} 
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === "" || /^\d+$/.test(value)) {
+                field("yearsOfExperience")(value);
+              }
+            }}
+            className={`${inputBase} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+            required 
+          />
+        </div>
+        <div>
           <Label required>Contact Number</Label>
           <Input 
             type="tel" 
@@ -273,6 +292,10 @@ const ExternalExaminerCard = ({ index, data, onChange, subjectId }) => {
             required 
           />
         </div>
+        <div>
+          <Label required>Email ID</Label>
+          <Input type="email" placeholder="examiner@institution.edu" value={data.email} onChange={(e) => field("email")(e.target.value)} required />
+        </div>
         <div className="sm:col-span-2">
           <Label required>Address</Label>
           <textarea
@@ -284,17 +307,6 @@ const ExternalExaminerCard = ({ index, data, onChange, subjectId }) => {
             required
           />
         </div>
-        <div>
-          <Label required>Email ID</Label>
-          <Input type="email" placeholder="examiner@institution.edu" value={data.email} onChange={(e) => field("email")(e.target.value)} required />
-        </div>
-        <div className="flex items-center">
-          <VerificationRadio
-            value={data.verification}
-            onChange={field("verification")}
-            name={`external-${subjectId}-${index}`}
-          />
-        </div>
       </div>
     </div>
   );
@@ -304,7 +316,7 @@ const ExternalExaminerCard = ({ index, data, onChange, subjectId }) => {
    Blank factories & sync helper
 ───────────────────────────────────────────── */
 const blankInternal = () => ({ name: "" });
-const blankExternal = () => ({ name: "", address: "", contact: "", email: "", verification: "" });
+const blankExternal = () => ({ name: "", address: "", contact: "", email: "", yearsOfExperience: "" });
 
 const syncArray = (arr, count, blank) => {
   const n = parseInt(count, 10) || 0;
@@ -320,10 +332,12 @@ let _subjectId = 0;
 const Subject = ({ index, onChange }) => {
   const [id] = useState(() => ++_subjectId);
 
+  const [selectedSemester, setSelectedSemester] = useState("");
   const [subjectName, setSubjectName] = useState("");
   const [subjectCode, setSubjectCode] = useState("");
   const [semester, setSemester] = useState("");
   const [studentsEnrolled, setStudentsEnrolled] = useState("");
+  const [verification, setVerification] = useState("No");
 
   const [examinerCount, setExaminerCount] = useState("1");
   const [internals, setInternals] = useState([blankInternal()]);
@@ -343,10 +357,11 @@ const Subject = ({ index, onChange }) => {
           axios.get(`${BACKEND_URL}/api/internal-examiners`)
         ]);
         
-        // Map subjects to get both name and code
+        // Map subjects to get name, code, and semester
         const subjectsData = subjectsRes.data.map(s => ({
           name: s.subjectName,
-          code: s.subjectCode
+          code: s.subjectCode,
+          semester: s.semester
         }));
         setSubjects(subjectsData);
         
@@ -374,21 +389,27 @@ const Subject = ({ index, onChange }) => {
   const updateExternal = useCallback((idx, key, val) =>
     setExternals((prev) => prev.map((e, i) => (i === idx ? { ...e, [key]: val } : e))), []);
 
-  // When subject name is selected, auto-fill subject code
+  // When subject name is selected, auto-fill subject code and semester
   const handleSubjectNameChange = (name) => {
     setSubjectName(name);
     const subject = subjects.find(s => s.name === name);
     if (subject) {
       setSubjectCode(subject.code);
+      setSemester(subject.semester);
     }
   };
+
+  // Filter subjects by selected semester
+  const filteredSubjects = selectedSemester
+    ? subjects.filter(s => s.semester === selectedSemester)
+    : subjects;
 
   // Lift state up to App whenever anything changes
   useEffect(() => {
     if (onChange) {
-      onChange(index, { subjectName, subjectCode, semester, studentsEnrolled, internals, externals });
+      onChange(index, { subjectName, subjectCode, semester, studentsEnrolled, verification, internals, externals });
     }
-  }, [subjectName, subjectCode, semester, studentsEnrolled, internals, externals]);
+  }, [subjectName, subjectCode, semester, studentsEnrolled, verification, internals, externals]);
 
   const semesterLabels = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
 
@@ -412,6 +433,17 @@ const Subject = ({ index, onChange }) => {
             </span>
           </div>
 
+          {/* Semester Filter */}
+          <div className="mb-5 bg-gradient-to-r from-[#00c9a7]/5 to-emerald-50/50 border border-[#00c9a7]/30 rounded-xl p-4">
+            <Label required>Select Semester First</Label>
+            <Select value={selectedSemester} onChange={(e) => setSelectedSemester(e.target.value)} required>
+              <option value="" disabled>Choose Semester</option>
+              {semesterLabels.map((s) => (
+                <option key={s} value={s}>Semester {s}</option>
+              ))}
+            </Select>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-2">
             <div>
               <Label required>Subject Name</Label>
@@ -421,13 +453,16 @@ const Subject = ({ index, onChange }) => {
                 </div>
               ) : (
                 <SearchableDropdown
-                  options={subjects.map(s => s.name)}
+                  options={filteredSubjects.map(s => s.name)}
                   value={subjectName}
                   onChange={handleSubjectNameChange}
-                  placeholder="Select or search subject..."
+                  placeholder={selectedSemester ? "Select or search subject..." : "Select semester first..."}
                   label="subjects"
                   required
                 />
+              )}
+              {selectedSemester && filteredSubjects.length === 0 && (
+                <p className="text-[11px] text-amber-600 mt-1.5 font-[DM_Sans,sans-serif]">⚠️ No subjects found for Semester {selectedSemester}</p>
               )}
             </div>
             <div>
@@ -438,16 +473,17 @@ const Subject = ({ index, onChange }) => {
                 onChange={(e) => setSubjectCode(e.target.value)}
                 className={`${inputBase} ${subjectName ? 'bg-[#00c9a7]/5 font-semibold text-[#00a98c]' : ''}`}
                 required
+                readOnly
               />
             </div>
             <div>
               <Label required>Semester</Label>
-              <Select value={semester} onChange={(e) => setSemester(e.target.value)} required>
-                <option value="" disabled>Select Semester</option>
-                {semesterLabels.map((s) => (
-                  <option key={s} value={s}>Semester {s}</option>
-                ))}
-              </Select>
+              <Input
+                placeholder="Auto-filled from subject"
+                value={semester ? `Semester ${semester}` : ""}
+                className={`${inputBase} ${semester ? 'bg-[#00c9a7]/5 font-semibold text-[#00a98c]' : ''}`}
+                readOnly
+              />
             </div>
             <div>
               <Label required>No. of Students Enrolled</Label>
@@ -464,6 +500,17 @@ const Subject = ({ index, onChange }) => {
                 required
               />
             </div>
+          </div>
+
+          <DividerLine />
+
+          {/* Verification Field - At Subject Level */}
+          <div className="mb-5">
+            <VerificationRadio
+              value={verification}
+              onChange={setVerification}
+              name={`subject-verification-${id}`}
+            />
           </div>
 
           <DividerLine />
