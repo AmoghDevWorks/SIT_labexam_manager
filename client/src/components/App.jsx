@@ -9,7 +9,7 @@ import { AdminProvider } from "./utils/adminContext";
 import ProtectedRoute from "./utils/ProtectedRoute";
 
 
-import Home from './user/Home'
+import UserDashboard from './user/UserDashboard'
 import Header from './Header'
 import Footer from "./Footer";
 import UploadExcel from "./user/excelUpload/UploadExcel";
@@ -17,6 +17,8 @@ import AdminLogin from "./admin/AdminLogin";
 import AdminDashboard from "./admin/AdminDashboard";
 import ManageSubject from "./admin/ManageSubject";
 import ManageInternalExaminer from "./admin/ManageInternalExaminer";
+import Home from "./Home";
+import UserLogin from "./user/UserLogin";
 
 // Layout Component
 const Layout = () => {
@@ -36,8 +38,16 @@ const router = createBrowserRouter([
     element: <Layout />,
     children: [
       {
-        path:'/',
-        element:<Home />
+        path: '/',
+        element: <Home />
+      },
+      {
+        path: '/user/login',
+        element: <UserLogin />
+      },
+      {
+        path:'/user/dashboard',
+        element:<UserDashboard />
       },
       {
         path:'/excel',

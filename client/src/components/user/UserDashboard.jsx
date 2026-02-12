@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Hero from './manualUpload/Hero';
 import UploadExcel from './excelUpload/UploadExcel';
 
-const Home = () => {
+const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState('hero'); // 'hero' or 'upload'
 
   return (
@@ -47,4 +47,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default UserDashboard;
