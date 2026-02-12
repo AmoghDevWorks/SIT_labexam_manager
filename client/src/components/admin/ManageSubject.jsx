@@ -223,6 +223,259 @@ const SubjectModal = ({ mode, initial, onClose, onSave, existingCodes, loading }
 };
 
 /* ════════════════════════════════════════════
+   MANAGE EXAMINERS MODAL
+════════════════════════════════════════════ */
+const ManageExaminersModal = ({ subject, onClose }) => {
+  const overlayRef = useRef(null);
+  const [assignedExaminers, setAssignedExaminers] = useState([]);
+  const [unassignedExaminers, setUnassignedExaminers] = useState([]);
+  const [selectedExaminer, setSelectedExaminer] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [removeConfirm, setRemoveConfirm] = useState(null); // { assignmentId, examinerName }
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    fetchExaminers();
+  }, [subject.id]);
+
+  const fetchExaminers = async () => {
+    setLoading(true);
+    try {
+      const [assignedRes, unassignedRes] = await Promise.all([
+        axios.get(`${BACKEND_URL}/api/subject-assignments/subject/${subject.id}`),
+        axios.get(`${BACKEND_URL}/api/subject-assignments/unassigned/${subject.id}`)
+      ]);
+      setAssignedExaminers(assignedRes.data);
+      setUnassignedExaminers(unassignedRes.data);
+    } catch (error) {
+      console.error("Error fetching examiners:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAssign = async () => {
+    if (!selectedExaminer) return;
+    setActionLoading(true);
+    try {
+      await axios.post(`${BACKEND_URL}/api/subject-assignments`, {
+        subjectId: subject.id,
+        internalExaminerId: selectedExaminer
+      });
+      setSelectedExaminer("");
+      await fetchExaminers();
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to assign examiner");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRemove = async (assignmentId) => {
+    setActionLoading(true);
+    try {
+      await axios.delete(`${BACKEND_URL}/api/subject-assignments/${assignmentId}`);
+      await fetchExaminers();
+      setRemoveConfirm(null);
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to remove assignment");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  return (
+    <div
+      ref={overlayRef}
+      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0f1f3d]/55 backdrop-blur-sm"
+      style={{ animation: "overlayFadeIn 0.18s ease both" }}
+    >
+      <div
+        className="relative w-full max-w-[520px] bg-white rounded-2xl shadow-[0_28px_80px_rgba(15,31,61,0.28)] overflow-hidden"
+        style={{ animation: "modalPopIn 0.28s cubic-bezier(0.34,1.56,0.64,1) both" }}
+      >
+        <div className="h-1.5 w-full bg-gradient-to-r from-[#00c9a7] via-[#00e5c4] to-[#00a98c]" />
+
+        <div className="px-7 pt-6 pb-4">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h2 className="text-[16px] font-extrabold text-[#1a2e4a] font-[Syne,sans-serif] leading-tight">
+                Manage Internal Examiners
+              </h2>
+              <p className="text-[12px] text-[#6b85a3] mt-1 font-[DM_Sans,sans-serif] truncate">
+                {subject.name} ({subject.code})
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-[#6b85a3] hover:bg-sky-100 hover:text-[#1a2e4a] transition-all duration-150 shrink-0"
+            >
+              <svg viewBox="0 0 18 18" className="w-3.5 h-3.5" fill="none">
+                <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="h-px bg-gradient-to-r from-transparent via-[#00c9a7]/20 to-transparent mx-7 mb-1" />
+
+        <div className="px-7 py-5 max-h-[60vh] overflow-y-auto">
+          {/* Add Examiner */}
+          <div className="mb-6">
+            <label className="block text-[11px] font-bold tracking-[0.1em] uppercase text-[#6b85a3] mb-2 font-[Syne,sans-serif]">
+              Assign Examiner
+            </label>
+            <div className="flex gap-2">
+              <select
+                value={selectedExaminer}
+                onChange={(e) => setSelectedExaminer(e.target.value)}
+                disabled={actionLoading || loading}
+                className="flex-1 px-4 py-2.5 text-sm text-[#1a2e4a] bg-sky-50 border border-[#00c9a7]/25 rounded-xl outline-none transition-all duration-200 focus:border-[#00c9a7] focus:shadow-[0_0_0_3px_rgba(0,201,167,0.12)] font-[DM_Sans,sans-serif] cursor-pointer disabled:opacity-50"
+              >
+                <option value="">Select an examiner...</option>
+                {unassignedExaminers.map((examiner) => (
+                  <option key={examiner._id} value={examiner._id}>{examiner.name}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleAssign}
+                disabled={!selectedExaminer || actionLoading}
+                className="px-4 py-2.5 text-[13px] font-bold text-white bg-gradient-to-r from-[#00c9a7] to-[#00a98c] rounded-xl shadow-[0_4px_14px_rgba(0,201,167,0.35)] hover:shadow-[0_6px_20px_rgba(0,201,167,0.45)] hover:-translate-y-0.5 transition-all duration-200 font-[Syne,sans-serif] disabled:opacity-50 disabled:translate-y-0 disabled:cursor-not-allowed"
+              >
+                {actionLoading ? <Spinner sm /> : "Add"}
+              </button>
+            </div>
+          </div>
+
+          {/* Assigned Examiners List */}
+          <div>
+            <label className="block text-[11px] font-bold tracking-[0.1em] uppercase text-[#6b85a3] mb-3 font-[Syne,sans-serif]">
+              Assigned Examiners ({assignedExaminers.length})
+            </label>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Spinner />
+              </div>
+            ) : assignedExaminers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center bg-sky-50 rounded-xl border border-[#00c9a7]/10">
+                <svg viewBox="0 0 24 24" className="w-8 h-8 text-[#6b85a3]/40 mb-2" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5"/>
+                  <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+                <p className="text-[13px] text-[#6b85a3] font-[DM_Sans,sans-serif]">
+                  No examiners assigned yet
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {assignedExaminers.map((assignment) => (
+                  <div
+                    key={assignment._id}
+                    className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-sky-50 to-emerald-50/40 border border-[#00c9a7]/20 rounded-xl"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00c9a7] to-[#00a98c] flex items-center justify-center text-white text-[11px] font-bold font-[Syne,sans-serif]">
+                        {assignment.internalExaminerId?.name?.slice(0, 2).toUpperCase() || "??"}
+                      </div>
+                      <span className="text-[13px] font-semibold text-[#1a2e4a] font-[DM_Sans,sans-serif]">
+                        {assignment.internalExaminerId?.name || "Unknown"}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setRemoveConfirm({ 
+                        assignmentId: assignment._id, 
+                        examinerName: assignment.internalExaminerId?.name || "Unknown"
+                      })}
+                      disabled={actionLoading}
+                      className="p-2 rounded-lg text-rose-500 hover:bg-rose-50 transition-all disabled:opacity-50"
+                    >
+                      <svg viewBox="0 0 14 14" className="w-3.5 h-3.5" fill="none">
+                        <path d="M2 3.5h10M5.5 3.5V2h3v1.5M3.5 3.5l.7 8h5.6l.7-8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="px-7 py-4 bg-sky-50 border-t border-[#00c9a7]/10">
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 text-[13px] font-semibold text-[#6b85a3] bg-white border border-[#00c9a7]/20 rounded-xl hover:bg-sky-100 hover:text-[#1a2e4a] transition-all font-[Syne,sans-serif]"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+
+      {/* Remove Confirmation Modal */}
+      {removeConfirm && (
+        <div 
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          style={{ animation: "overlayFadeIn 0.15s ease both" }}
+        >
+          <div
+            className="relative w-full max-w-[360px] bg-white rounded-2xl shadow-[0_32px_64px_rgba(0,0,0,0.24)] overflow-hidden"
+            style={{ animation: "modalPopIn 0.25s cubic-bezier(0.34,1.56,0.64,1) both" }}
+          >
+            <div className="h-1.5 w-full bg-gradient-to-r from-rose-400 via-rose-500 to-rose-400" />
+            
+            <div className="px-6 py-5 flex flex-col items-center text-center gap-3.5">
+              {/* Warning icon */}
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-rose-50 to-rose-100 border border-rose-200 flex items-center justify-center">
+                <svg viewBox="0 0 20 20" className="w-5 h-5 text-rose-500" fill="none">
+                  <path d="M10 6v4M10 14h.01M8.93 3.07L2.54 14a1.5 1.5 0 0 0 1.3 2.25h12.32a1.5 1.5 0 0 0 1.3-2.25L11.07 3.07a1.5 1.5 0 0 0-2.14 0z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+
+              <div>
+                <h3 className="text-[15px] font-extrabold text-[#1a2e4a] font-[Syne,sans-serif] mb-1.5">
+                  Remove Examiner?
+                </h3>
+                <p className="text-[12px] text-[#6b85a3] font-[DM_Sans,sans-serif] leading-relaxed">
+                  Are you sure you want to remove
+                  <br />
+                  <span className="font-semibold text-[#1a2e4a]">{removeConfirm.examinerName}</span>
+                  <br />
+                  from this subject?
+                </p>
+              </div>
+
+              <div className="flex gap-2.5 w-full pt-1">
+                <button
+                  onClick={() => setRemoveConfirm(null)}
+                  disabled={actionLoading}
+                  className="flex-1 py-2.5 text-[12px] font-semibold text-[#6b85a3] bg-sky-50 border border-[#00c9a7]/20 rounded-xl hover:bg-sky-100 transition-all font-[Syne,sans-serif] disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleRemove(removeConfirm.assignmentId)}
+                  disabled={actionLoading}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 text-[12px] font-bold text-white bg-gradient-to-r from-rose-500 to-rose-600 rounded-xl shadow-[0_4px_14px_rgba(239,68,68,0.3)] hover:shadow-[0_6px_20px_rgba(239,68,68,0.4)] hover:-translate-y-0.5 transition-all duration-200 font-[Syne,sans-serif] disabled:opacity-70 disabled:translate-y-0"
+                >
+                  {actionLoading && <Spinner sm />}
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ════════════════════════════════════════════
    DELETE CONFIRM MODAL
 ════════════════════════════════════════════ */
 const DeleteModal = ({ subject, onClose, onConfirm, loading }) => {
@@ -293,7 +546,7 @@ const DeleteModal = ({ subject, onClose, onConfirm, loading }) => {
 /* ════════════════════════════════════════════
    SUBJECT CARD
 ════════════════════════════════════════════ */
-const SubjectCard = ({ subject, index, onEdit, onDelete }) => {
+const SubjectCard = ({ subject, index, onEdit, onDelete, onManageExaminers }) => {
   const [from, to] = CARD_ACCENTS[index % CARD_ACCENTS.length];
   const initials = (subject?.name ?? "")
   .split(/\s+/)
@@ -345,27 +598,43 @@ const SubjectCard = ({ subject, index, onEdit, onDelete }) => {
           </div>
         </div>
 
-        {/* Action row — slides in on hover */}
-        <div className="flex items-center gap-2 mt-4 pt-3.5 border-t border-[#00c9a7]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        {/* Action rows — slides in on hover */}
+        <div className="mt-4 pt-3.5 border-t border-[#00c9a7]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 space-y-2">
+          {/* Examiners button - full width */}
           <button
-            onClick={() => onEdit(subject)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-bold text-[#00a98c] bg-[#00c9a7]/10 border border-[#00c9a7]/20 rounded-lg hover:bg-[#00c9a7]/20 transition-all font-[Syne,sans-serif]"
+            onClick={() => onManageExaminers(subject)}
+            className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold text-[#00c9a7] bg-[#00c9a7]/10 border border-[#00c9a7]/20 rounded-lg hover:bg-[#00c9a7]/20 transition-all font-[Syne,sans-serif]"
+            title="Manage assigned examiners"
           >
             <svg viewBox="0 0 14 14" className="w-3 h-3" fill="none">
-              <path d="M2 9.5V12h2.5l5.8-5.8-2.5-2.5L2 9.5z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
-              <path d="M9.5 2.5a1 1 0 0 1 1.4 1.4l-.6.6-1.4-1.4.6-.6z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+              <circle cx="7" cy="4.5" r="2.5" stroke="currentColor" strokeWidth="1.2"/>
+              <path d="M2 12c0-2.5 2-4 5-4s5 1.5 5 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
             </svg>
-            Edit
+            Manage Examiners
           </button>
-          <button
-            onClick={() => onDelete(subject)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-bold text-rose-500 bg-rose-50 border border-rose-200/60 rounded-lg hover:bg-rose-100 transition-all font-[Syne,sans-serif]"
-          >
-            <svg viewBox="0 0 14 14" className="w-3 h-3" fill="none">
-              <path d="M2 3.5h10M5.5 3.5V2h3v1.5M3.5 3.5l.7 8h5.6l.7-8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Delete
-          </button>
+          
+          {/* Edit and Delete buttons - side by side */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onEdit(subject)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-bold text-[#00a98c] bg-[#00c9a7]/10 border border-[#00c9a7]/20 rounded-lg hover:bg-[#00c9a7]/20 transition-all font-[Syne,sans-serif]"
+            >
+              <svg viewBox="0 0 14 14" className="w-3 h-3" fill="none">
+                <path d="M2 9.5V12h2.5l5.8-5.8-2.5-2.5L2 9.5z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+                <path d="M9.5 2.5a1 1 0 0 1 1.4 1.4l-.6.6-1.4-1.4.6-.6z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+              </svg>
+              Edit
+            </button>
+            <button
+              onClick={() => onDelete(subject)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-bold text-rose-500 bg-rose-50 border border-rose-200/60 rounded-lg hover:bg-rose-100 transition-all font-[Syne,sans-serif]"
+            >
+              <svg viewBox="0 0 14 14" className="w-3 h-3" fill="none">
+                <path d="M2 3.5h10M5.5 3.5V2h3v1.5M3.5 3.5l.7 8h5.6l.7-8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Delete
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -460,7 +729,7 @@ const ManageSubject = () => {
   const [fetchLoading, setFetchLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
 
-  const [modal, setModal] = useState(null); // null | "add" | "edit" | "delete"
+  const [modal, setModal] = useState(null); // null | "add" | "edit" | "delete" | "manage-examiners"
   const [activeSubject, setActiveSubject] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
 
@@ -808,6 +1077,7 @@ const ManageSubject = () => {
                               index={cardIndex++}
                               onEdit={(s) => { setActiveSubject(s); setModal("edit"); }}
                               onDelete={(s) => { setActiveSubject(s); setModal("delete"); }}
+                              onManageExaminers={(s) => { setActiveSubject(s); setModal("manage-examiners"); }}
                             />
                           ))}
                         </div>
@@ -861,6 +1131,14 @@ const ManageSubject = () => {
           onClose={() => { setModal(null); setActiveSubject(null); }}
           onConfirm={handleDelete}
           loading={modalLoading}
+        />
+      )}
+
+      {/* ── Manage Examiners Modal ── */}
+      {modal === "manage-examiners" && activeSubject && (
+        <ManageExaminersModal
+          subject={activeSubject}
+          onClose={() => { setModal(null); setActiveSubject(null); }}
         />
       )}
 

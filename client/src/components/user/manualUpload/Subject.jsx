@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
+import { useUser } from "../../utils/userContext";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -331,6 +332,9 @@ let _subjectId = 0;
 ───────────────────────────────────────────── */
 const Subject = ({ index, onChange }) => {
   const [id] = useState(() => ++_subjectId);
+  const { userUid, userName } = useUser(); // Get logged-in examiner ID and name
+
+  console.log('Subject component - userUid:', userUid, 'userName:', userName);
 
   const [selectedSemester, setSelectedSemester] = useState("");
   const [subjectName, setSubjectName] = useState("");
@@ -345,37 +349,72 @@ const Subject = ({ index, onChange }) => {
 
   // API data
   const [subjects, setSubjects] = useState([]);
+  const [assignedSubjectIds, setAssignedSubjectIds] = useState([]);
   const [internalExaminers, setInternalExaminers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch subjects and internal examiners on mount
   useEffect(() => {
     const fetchData = async () => {
+      console.log('Fetching data... userUid:', userUid);
+      
+      if (!userUid) {
+        console.log('No userUid found, skipping fetch');
+        setLoading(false);
+        return;
+      }
+
       try {
-        const [subjectsRes, examinersRes] = await Promise.all([
+        console.log('Making API calls...');
+        
+        // Fetch all data including assigned subjects for this examiner
+        const [subjectsRes, examinersRes, assignedRes] = await Promise.all([
           axios.get(`${BACKEND_URL}/api/subjects`),
-          axios.get(`${BACKEND_URL}/api/internal-examiners`)
+          axios.get(`${BACKEND_URL}/api/internal-examiners`),
+          axios.get(`${BACKEND_URL}/api/subject-assignments/examiner/${userUid}`)
         ]);
         
-        // Map subjects to get name, code, and semester
-        const subjectsData = subjectsRes.data.map(s => ({
+        console.log('Subjects response:', subjectsRes.data);
+        console.log('Examiners response:', examinersRes.data);
+        console.log('Assignments response:', assignedRes.data);
+        
+        // The backend returns subjects directly, not assignments
+        // So assignedRes.data is already an array of subject objects
+        const assignedSubjectsFromAPI = assignedRes.data;
+        console.log('Assigned subjects from API:', assignedSubjectsFromAPI);
+        
+        // Get assigned subject IDs
+        const assignedIds = assignedSubjectsFromAPI.map(subject => subject._id);
+        console.log('Assigned subject IDs:', assignedIds);
+        setAssignedSubjectIds(assignedIds);
+        
+        // Filter subjects to only show assigned ones
+        const allSubjects = subjectsRes.data.map(s => ({
+          id: s._id,
           name: s.subjectName,
           code: s.subjectCode,
           semester: s.semester
         }));
-        setSubjects(subjectsData);
+        
+        console.log('All subjects:', allSubjects);
+        
+        const assignedSubjects = allSubjects.filter(s => assignedIds.includes(s.id));
+        console.log('Filtered assigned subjects:', assignedSubjects);
+        setSubjects(assignedSubjects);
         
         // Map internal examiners
         const examinersData = examinersRes.data.map(e => e.name);
+        console.log('Internal examiners:', examinersData);
         setInternalExaminers(examinersData);
       } catch (err) {
         console.error("Failed to fetch data:", err);
+        console.error("Error details:", err.response?.data);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, []);
+  }, [userUid]);
 
   const handleExaminerCount = (val) => {
     setExaminerCount(val);
@@ -428,20 +467,36 @@ const Subject = ({ index, onChange }) => {
           {/* Subject number badge */}
           <div className="flex items-center justify-between mb-5">
             <SectionHeading icon="📚" title="Subject Details" subtitle="Core information about this subject" />
-            <span className="text-[11px] font-bold tracking-widest uppercase bg-[#0f1f3d]/8 border border-[#00c9a7]/20 text-[#6b85a3] px-3 py-1 rounded-full font-[Syne,sans-serif]">
-              Subject #{index + 1}
-            </span>
+            <div className="flex items-center gap-2">
+              {userUid && (
+                <span className="text-[10px] font-semibold tracking-wider bg-emerald-50 border border-emerald-200 text-emerald-700 px-2.5 py-1 rounded-full font-[Syne,sans-serif]">
+                  ✓ Logged in{userName ? `: ${userName}` : ''}
+                </span>
+              )}
+              <span className="text-[11px] font-bold tracking-widest uppercase bg-[#0f1f3d]/8 border border-[#00c9a7]/20 text-[#6b85a3] px-3 py-1 rounded-full font-[Syne,sans-serif]">
+                Subject #{index + 1}
+              </span>
+            </div>
           </div>
 
           {/* Semester Filter */}
           <div className="mb-5 bg-gradient-to-r from-[#00c9a7]/5 to-emerald-50/50 border border-[#00c9a7]/30 rounded-xl p-4">
             <Label required>Select Semester First</Label>
-            <Select value={selectedSemester} onChange={(e) => setSelectedSemester(e.target.value)} required>
-              <option value="" disabled>Choose Semester</option>
-              {semesterLabels.map((s) => (
-                <option key={s} value={s}>Semester {s}</option>
-              ))}
-            </Select>
+            {!userUid ? (
+              <div className="flex items-center gap-2 px-4 py-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-600 text-sm">
+                <svg viewBox="0 0 16 16" className="w-4 h-4 shrink-0" fill="currentColor">
+                  <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 3.5a.75.75 0 0 1 .75.75v3a.75.75 0 0 1-1.5 0v-3A.75.75 0 0 1 8 4.5zm0 6.5a.875.875 0 1 1 0-1.75.875.875 0 0 1 0 1.75z" />
+                </svg>
+                Please log in to access subjects
+              </div>
+            ) : (
+              <Select value={selectedSemester} onChange={(e) => setSelectedSemester(e.target.value)} required>
+                <option value="" disabled>Choose Semester</option>
+                {semesterLabels.map((s) => (
+                  <option key={s} value={s}>Semester {s}</option>
+                ))}
+              </Select>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-2">
@@ -462,7 +517,15 @@ const Subject = ({ index, onChange }) => {
                 />
               )}
               {selectedSemester && filteredSubjects.length === 0 && (
-                <p className="text-[11px] text-amber-600 mt-1.5 font-[DM_Sans,sans-serif]">⚠️ No subjects found for Semester {selectedSemester}</p>
+                <p className="text-[11px] text-amber-600 mt-1.5 font-[DM_Sans,sans-serif]">⚠️ No assigned subjects found for Semester {selectedSemester}</p>
+              )}
+              {!selectedSemester && subjects.length === 0 && !loading && (
+                <p className="text-[11px] text-rose-600 mt-1.5 font-[DM_Sans,sans-serif] flex items-center gap-1">
+                  <svg viewBox="0 0 16 16" className="w-3 h-3" fill="currentColor">
+                    <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 3.5a.75.75 0 0 1 .75.75v3a.75.75 0 0 1-1.5 0v-3A.75.75 0 0 1 8 4.5zm0 6.5a.875.875 0 1 1 0-1.75.875.875 0 0 1 0 1.75z" />
+                  </svg>
+                  No subjects assigned to you. Please contact admin.
+                </p>
               )}
             </div>
             <div>

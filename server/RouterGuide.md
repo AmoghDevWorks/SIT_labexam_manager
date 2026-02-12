@@ -51,3 +51,15 @@
 | GET | `/api/exam-data/semester/:semester/subject/:subjectName` | Retrieve exam data entries for a specific semester and subject combination |
 | PUT | `/api/exam-data/:id` | Update an exam data entry by its MongoDB ID. Can update semester, subject details, examiners, etc. |
 | DELETE | `/api/exam-data/:id` | Delete an exam data entry by its MongoDB ID |
+
+---
+
+## Subject Assignment Routes — `/api/subject-assignments`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/subject-assignments` | Assign an internal examiner to a subject. Requires `subjectId` and `internalExaminerId`. Creates unique subject-examiner relationship |
+| DELETE | `/api/subject-assignments/:assignmentId` | Remove a subject-examiner assignment by its MongoDB ID |
+| GET | `/api/subject-assignments/subject/:subjectId` | Get all internal examiners assigned to a specific subject with examiner details populated |
+| GET | `/api/subject-assignments/examiner/:examinerId` | Get all subjects assigned to a specific internal examiner with subject details populated |
+| GET | `/api/subject-assignments/unassigned/:subjectId` | Get all internal examiners NOT assigned to a specific subject (available for assignment) |

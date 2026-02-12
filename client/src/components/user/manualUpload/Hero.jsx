@@ -1,11 +1,13 @@
 import React, { useState, useCallback } from "react";
 import Subject from "./Subject";
 import { validateData } from "../../utils/downloadUtils";
+import { useUser } from "../../utils/userContext";
 import axios from "axios";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const Hero = () => {
+  const { userUid } = useUser(); // Get logged-in examiner ID
   const [inputVal, setInputVal] = useState("1");
   const subjectCount = Math.max(1, parseInt(inputVal, 10) || 0);
 
@@ -32,6 +34,12 @@ const Hero = () => {
 
   // Save exam data to backend
   const handleSaveExamData = async () => {
+    // Check if user is logged in
+    if (!userUid) {
+      alert('❌ Please log in to save exam data');
+      return;
+    }
+
     // Validate all data first
     const errors = validateData(subjectsData, subjectCount);
     

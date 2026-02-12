@@ -22,17 +22,25 @@ const UserLogin = () => {
     setIsLoading(true);
 
     try {
+      console.log('Attempting login with name:', name);
+      
       const response = await axios.post(`${BACKEND_URL}/api/internal-examiners/login`, {
         name,
         password
       });
 
+      console.log('Login response:', response.data);
+
       const examinerId = response.data.examiner.id;
       const examinerName = response.data.examiner.name;
+      
+      console.log('Setting userUid to:', examinerId);
+      console.log('Setting userName to:', examinerName);
       
       setUserUid(examinerId);
       setUserName(examinerName);
     } catch (err) {
+      console.error('Login error:', err);
       setError(err.response?.data?.message || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
