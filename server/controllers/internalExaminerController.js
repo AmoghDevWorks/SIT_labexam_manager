@@ -1,4 +1,5 @@
 const InternalExaminer = require("../models/internalExaminer");
+const bcrypt = require("bcrypt");
 
 // =======================
 // CREATE INTERNAL EXAMINER
@@ -21,7 +22,10 @@ exports.createInternalExaminer = async (req, res) => {
       return res.status(400).json({ message: "Examiner already exists" });
     }
 
-    const examiner = await InternalExaminer.create({ name, password });
+    // Hash password before saving
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const examiner = await InternalExaminer.create({ name, password: hashedPassword });
 
     res.status(201).json({
       message: "Internal Examiner created successfully",
@@ -117,7 +121,10 @@ exports.loginInternalExaminer = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    if (examiner.password !== password) {
+    // Compare hashed password
+    const isPasswordValid = await bcrypt.compare(password, examiner.password);
+
+    if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
