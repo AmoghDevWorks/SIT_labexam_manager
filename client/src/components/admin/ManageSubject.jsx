@@ -587,6 +587,28 @@ const ManageSubject = () => {
     );
   });
 
+  // Group filtered subjects by semester
+  const groupedBySemester = filtered.reduce((acc, subject) => {
+    const sem = subject.semester || "Unassigned";
+    if (!acc[sem]) acc[sem] = [];
+    acc[sem].push(subject);
+    return acc;
+  }, {});
+
+  // Always show all semesters I-VIII, even if empty
+  const allSemesters = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
+  
+  // Ensure all semesters exist in the grouped object
+  allSemesters.forEach(sem => {
+    if (!groupedBySemester[sem]) groupedBySemester[sem] = [];
+  });
+
+  // Sort semesters in Roman numeral order, then Unassigned at the end
+  const sortedSemesters = [...allSemesters];
+  if (groupedBySemester["Unassigned"] && groupedBySemester["Unassigned"].length > 0) {
+    sortedSemesters.push("Unassigned");
+  }
+
   if (!adminUid) return null;
 
   return (
@@ -744,20 +766,65 @@ const ManageSubject = () => {
               </button>
             </div>
           ) : (
-            /* Cards grid */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            /* Cards grid grouped by semester */
+            <div className="space-y-8">
               {filtered.length === 0 ? (
-                <EmptyState hasSearch={!!search} onAdd={() => setModal("add")} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <EmptyState hasSearch={!!search} onAdd={() => setModal("add")} />
+                </div>
               ) : (
-                filtered.map((subject, i) => (
-                  <SubjectCard
-                    key={subject.id}
-                    subject={subject}
-                    index={i}
-                    onEdit={(s) => { setActiveSubject(s); setModal("edit"); }}
-                    onDelete={(s) => { setActiveSubject(s); setModal("delete"); }}
-                  />
-                ))
+                sortedSemesters.map((semester) => {
+                  const semesterSubjects = groupedBySemester[semester] || [];
+                  let cardIndex = 0;
+                  
+                  return (
+                    <div key={semester} className="space-y-4">
+                      {/* Semester Header */}
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#0f1f3d] to-[#162847] text-white shadow-[0_4px_16px_rgba(15,31,61,0.15)]">
+                          <svg viewBox="0 0 16 16" className="w-4 h-4 text-[#00c9a7]" fill="none">
+                            <rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
+                            <path d="M5 6h6M5 9h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                          </svg>
+                          <span className="text-[13px] font-bold tracking-wide font-[Syne,sans-serif]">
+                            {semester === "Unassigned" ? "Unassigned Semester" : `Semester ${semester}`}
+                          </span>
+                        </div>
+                        <div className="px-3 py-1.5 rounded-lg bg-white/90 border border-[#00c9a7]/25 shadow-sm">
+                          <span className="text-[11px] font-bold text-[#00a98c] font-[Syne,sans-serif]">
+                            {semesterSubjects.length} {semesterSubjects.length === 1 ? 'Subject' : 'Subjects'}
+                          </span>
+                        </div>
+                        <div className="flex-1 h-px bg-gradient-to-r from-[#00c9a7]/30 to-transparent" />
+                      </div>
+
+                      {/* Semester Subjects Grid or Empty Message */}
+                      {semesterSubjects.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {semesterSubjects.map((subject) => (
+                            <SubjectCard
+                              key={subject.id}
+                              subject={subject}
+                              index={cardIndex++}
+                              onEdit={(s) => { setActiveSubject(s); setModal("edit"); }}
+                              onDelete={(s) => { setActiveSubject(s); setModal("delete"); }}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3 px-6 py-4 bg-white/60 border border-[#00c9a7]/15 rounded-xl">
+                          <svg viewBox="0 0 20 20" className="w-5 h-5 text-[#6b85a3]/50" fill="none">
+                            <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5"/>
+                            <path d="M10 6v4M10 14h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                          </svg>
+                          <p className="text-[13px] text-[#6b85a3] font-[DM_Sans,sans-serif]">
+                            No subjects registered for this semester
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           )}
