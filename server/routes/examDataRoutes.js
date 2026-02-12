@@ -7,7 +7,8 @@ const {
   getExamDataBySemester,
   getExamDataBySemesterAndSubject,
   updateExamData,
-  deleteExamData
+  deleteExamData,
+  checkExistingExamData
 } = require('../controllers/examDataController');
 
 // Create new exam data
@@ -15,6 +16,9 @@ router.post('/', createExamData);
 
 // Get all exam data
 router.get('/', getAllExamData);
+
+// Check if exam data exists for semester and subject code (must be before /:id route)
+router.get('/check/:semester/:subjectCode', checkExistingExamData);
 
 // Get exam data by ID
 router.get('/:id', getExamDataById);

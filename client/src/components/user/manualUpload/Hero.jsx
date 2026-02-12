@@ -17,6 +17,7 @@ const Hero = () => {
   // Save state
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showLockedToast, setShowLockedToast] = useState(false);
 
   const handleChange = (e) => {
     const raw = e.target.value;
@@ -37,6 +38,17 @@ const Hero = () => {
     // Check if user is logged in
     if (!userUid) {
       alert('❌ Please log in to save exam data');
+      return;
+    }
+
+    // Check if any subject has locked data
+    const lockedSubjects = Object.values(subjectsData)
+      .slice(0, subjectCount)
+      .filter(subject => subject.isDataLocked);
+    
+    if (lockedSubjects.length > 0) {
+      setShowLockedToast(true);
+      setTimeout(() => setShowLockedToast(false), 4000);
       return;
     }
 
@@ -225,6 +237,27 @@ const Hero = () => {
           </button>
         </div>
 
+        {/* Toast Error for Locked Data */}
+        {showLockedToast && (
+          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-[slideUp_0.3s_ease]">
+            <div className="bg-gradient-to-r from-rose-500 to-red-600 text-white px-6 py-4 rounded-xl shadow-[0_8px_32px_rgba(239,68,68,0.4)] border-2 border-white/20 backdrop-blur-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-bold text-sm font-[Syne,sans-serif]">❌ Cannot Save Locked Data</div>
+                  <div className="text-xs text-white/90 mt-0.5 font-[DM_Sans,sans-serif]">
+                    Some subjects contain already submitted data. Please remove locked subjects before saving.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </main>
 
       <style>{`
@@ -232,6 +265,10 @@ const Hero = () => {
         @keyframes fadeSlideIn {
           from { opacity: 0; transform: translateY(18px); }
           to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translate(-50%, 20px); }
+          to   { opacity: 1; transform: translate(-50%, 0); }
         }
       `}</style>
     </div>

@@ -131,6 +131,39 @@ const deleteExamData = async (req, res) => {
   }
 };
 
+// Check if exam data exists for a semester and subject code
+const checkExistingExamData = async (req, res) => {
+  try {
+    const { semester, subjectCode } = req.params;
+    
+    // Find exam data matching both semester and subject code
+    const examData = await ExamData.findOne({ 
+      semester: semester, 
+      subjectCode: subjectCode 
+    });
+    
+    if (examData) {
+      // Data exists - return the data
+      return res.status(200).json({
+        exists: true,
+        data: examData
+      });
+    } else {
+      // No data found
+      return res.status(200).json({
+        exists: false,
+        data: null
+      });
+    }
+  } catch (error) {
+    console.error('Error checking existing exam data:', error);
+    res.status(500).json({ 
+      message: 'Error checking existing exam data', 
+      error: error.message 
+    });
+  }
+};
+
 module.exports = {
   createExamData,
   getAllExamData,
@@ -138,5 +171,6 @@ module.exports = {
   getExamDataBySemester,
   getExamDataBySemesterAndSubject,
   updateExamData,
-  deleteExamData
+  deleteExamData,
+  checkExistingExamData
 };

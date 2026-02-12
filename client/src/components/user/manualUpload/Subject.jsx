@@ -32,7 +32,7 @@ const Select = ({ children, ...props }) => (
 /* ─────────────────────────────────────────────
    Searchable Dropdown with Filtering
 ───────────────────────────────────────────── */
-const SearchableDropdown = ({ options, value, onChange, placeholder, required, label }) => {
+const SearchableDropdown = ({ options, value, onChange, placeholder, required, label, disabled }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const dropdownRef = useRef(null);
@@ -52,6 +52,7 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, required, l
   );
 
   const handleSelect = (opt) => {
+    if (disabled) return;
     onChange(opt);
     setIsOpen(false);
     setSearch("");
@@ -60,8 +61,8 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, required, l
   return (
     <div ref={dropdownRef} className="relative">
       <div
-        onClick={() => setIsOpen(!isOpen)}
-        className={`${inputBase} cursor-pointer flex items-center justify-between ${!value ? "text-[#6b85a3]/60" : ""}`}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        className={`${inputBase} ${disabled ? 'opacity-60 cursor-not-allowed bg-gray-100' : 'cursor-pointer'} flex items-center justify-between ${!value ? "text-[#6b85a3]/60" : ""}`}
       >
         <span className="truncate">{value || placeholder}</span>
         <svg
@@ -73,7 +74,7 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, required, l
         </svg>
       </div>
 
-      {isOpen && (
+      {isOpen && !disabled && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-[#00c9a7]/30 rounded-xl shadow-[0_8px_24px_rgba(15,31,61,0.15)] overflow-hidden">
           <div className="p-2 border-b border-[#00c9a7]/20">
             <input
@@ -129,8 +130,8 @@ const DividerLine = () => (
 /* ─────────────────────────────────────────────
    Verification Radio
 ───────────────────────────────────────────── */
-const VerificationRadio = ({ value, onChange, name }) => (
-  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl p-4 shadow-[0_4px_16px_rgba(251,146,60,0.15)]">
+const VerificationRadio = ({ value, onChange, name, disabled }) => (
+  <div className={`bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl p-4 shadow-[0_4px_16px_rgba(251,146,60,0.15)] ${disabled ? 'opacity-70' : ''}`}>
     <div className="flex items-center gap-2 flex-wrap">
       <span className="text-[12px] font-bold tracking-[0.08em] uppercase text-amber-900 font-[Syne,sans-serif]">
         Permission to use already existing Question Paper with same code (Yes / No) <span className="text-rose-500">*</span>
@@ -141,7 +142,7 @@ const VerificationRadio = ({ value, onChange, name }) => (
           return (
             <label
               key={opt}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 transition-all duration-200 font-[Syne,sans-serif] ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'} border-2 transition-all duration-200 font-[Syne,sans-serif] ${
                 isChecked
                   ? opt === "Yes"
                     ? "bg-[#00c9a7]/15 border-[#00c9a7] text-[#00a98c] shadow-md"
@@ -154,8 +155,9 @@ const VerificationRadio = ({ value, onChange, name }) => (
                 name={name}
                 value={opt}
                 checked={isChecked}
-                onChange={() => onChange(opt)}
+                onChange={() => !disabled && onChange(opt)}
                 className="sr-only"
+                disabled={disabled}
               />
               <span
                 className={`w-2.5 h-2.5 rounded-full shrink-0 transition-all ${
@@ -178,18 +180,19 @@ const VerificationRadio = ({ value, onChange, name }) => (
 /* ─────────────────────────────────────────────
    Count Stepper
 ───────────────────────────────────────────── */
-const CountStepper = ({ label, value, onChange, min = 0 }) => {
+const CountStepper = ({ label, value, onChange, min = 0, disabled }) => {
   const num = parseInt(value, 10) || min;
   return (
-    <div className="flex items-center gap-3">
+    <div className={`flex items-center gap-3 ${disabled ? 'opacity-70' : ''}`}>
       <span className="text-[11px] font-bold tracking-[0.08em] uppercase text-[#6b85a3] font-[Syne,sans-serif] whitespace-nowrap">
         {label}
       </span>
       <div className="flex items-center border border-[#00c9a7]/25 rounded-xl overflow-hidden bg-sky-50">
         <button
           type="button"
-          onClick={() => onChange(String(Math.max(min, num - 1)))}
-          className="w-8 h-8 flex items-center justify-center text-[#00c9a7] hover:bg-[#00c9a7]/10 transition-colors text-lg font-bold"
+          onClick={() => !disabled && onChange(String(Math.max(min, num - 1)))}
+          className={`w-8 h-8 flex items-center justify-center text-[#00c9a7] ${disabled ? 'cursor-not-allowed' : 'hover:bg-[#00c9a7]/10'} transition-colors text-lg font-bold`}
+          disabled={disabled}
         >
           −
         </button>
@@ -199,15 +202,17 @@ const CountStepper = ({ label, value, onChange, min = 0 }) => {
           value={value}
           onChange={(e) => {
             const v = e.target.value;
-            if (v === "" || /^\d+$/.test(v)) onChange(v);
+            if (v === "" || /^\d+$/.test(v)) !disabled && onChange(v);
           }}
-          onBlur={() => { if (!value || parseInt(value, 10) < min) onChange(String(min)); }}
+          onBlur={() => { if (!disabled && (!value || parseInt(value, 10) < min)) onChange(String(min)); }}
           className="w-10 text-center text-sm font-bold text-[#1a2e4a] bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          disabled={disabled}
         />
         <button
           type="button"
-          onClick={() => onChange(String(num + 1))}
-          className="w-8 h-8 flex items-center justify-center text-[#00c9a7] hover:bg-[#00c9a7]/10 transition-colors text-lg font-bold"
+          onClick={() => !disabled && onChange(String(num + 1))}
+          className={`w-8 h-8 flex items-center justify-center text-[#00c9a7] ${disabled ? 'cursor-not-allowed' : 'hover:bg-[#00c9a7]/10'} transition-colors text-lg font-bold`}
+          disabled={disabled}
         >
           +
         </button>
@@ -219,10 +224,10 @@ const CountStepper = ({ label, value, onChange, min = 0 }) => {
 /* ─────────────────────────────────────────────
    Internal Examiner Card
 ───────────────────────────────────────────── */
-const InternalExaminerCard = ({ index, data, onChange, subjectId, internalExaminers }) => {
-  const field = (key) => (val) => onChange(index, key, val);
+const InternalExaminerCard = ({ index, data, onChange, subjectId, internalExaminers, disabled }) => {
+  const field = (key) => (val) => !disabled && onChange(index, key, val);
   return (
-    <div className="relative bg-gradient-to-br from-sky-50/80 to-emerald-50/40 border border-[#00c9a7]/20 rounded-xl p-4 shadow-[0_2px_12px_rgba(15,31,61,0.05)]">
+    <div className={`relative bg-gradient-to-br from-sky-50/80 to-emerald-50/40 border border-[#00c9a7]/20 rounded-xl p-4 shadow-[0_2px_12px_rgba(15,31,61,0.05)] ${disabled ? 'opacity-70' : ''}`}>
       <div className="absolute -top-2.5 left-4">
         <span className="text-[10px] font-bold tracking-widest uppercase bg-gradient-to-r from-[#00c9a7] to-[#00a98c] text-white px-2.5 py-0.5 rounded-full font-[Syne,sans-serif] shadow-sm">
           Internal #{index + 1}
@@ -237,6 +242,7 @@ const InternalExaminerCard = ({ index, data, onChange, subjectId, internalExamin
           placeholder="Select or search examiner..."
           label="examiners"
           required
+          disabled={disabled}
         />
       </div>
     </div>
@@ -246,10 +252,10 @@ const InternalExaminerCard = ({ index, data, onChange, subjectId, internalExamin
 /* ─────────────────────────────────────────────
    External Examiner Card
 ───────────────────────────────────────────── */
-const ExternalExaminerCard = ({ index, data, onChange, subjectId }) => {
-  const field = (key) => (val) => onChange(index, key, val);
+const ExternalExaminerCard = ({ index, data, onChange, subjectId, disabled }) => {
+  const field = (key) => (val) => !disabled && onChange(index, key, val);
   return (
-    <div className="relative bg-gradient-to-br from-sky-50/80 to-blue-50/40 border border-[#00c9a7]/20 rounded-xl p-4 shadow-[0_2px_12px_rgba(15,31,61,0.05)]">
+    <div className={`relative bg-gradient-to-br from-sky-50/80 to-blue-50/40 border border-[#00c9a7]/20 rounded-xl p-4 shadow-[0_2px_12px_rgba(15,31,61,0.05)] ${disabled ? 'opacity-70' : ''}`}>
       <div className="absolute -top-2.5 left-4">
         <span className="text-[10px] font-bold tracking-widest uppercase bg-gradient-to-r from-[#162847] to-[#0f1f3d] text-[#00c9a7] px-2.5 py-0.5 rounded-full font-[Syne,sans-serif] shadow-sm border border-[#00c9a7]/30">
           External #{index + 1}
@@ -258,7 +264,13 @@ const ExternalExaminerCard = ({ index, data, onChange, subjectId }) => {
       <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <Label required>Name</Label>
-          <Input placeholder="Dr. Examiner Name" value={data.name} onChange={(e) => field("name")(e.target.value)} required />
+          <Input 
+            placeholder="Dr. Examiner Name" 
+            value={data.name} 
+            onChange={(e) => field("name")(e.target.value)} 
+            required 
+            disabled={disabled}
+          />
         </div>
         <div>
           <Label required>Years of Experience</Label>
@@ -275,6 +287,7 @@ const ExternalExaminerCard = ({ index, data, onChange, subjectId }) => {
             }}
             className={`${inputBase} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
             required 
+            disabled={disabled}
           />
         </div>
         <div>
@@ -291,11 +304,19 @@ const ExternalExaminerCard = ({ index, data, onChange, subjectId }) => {
             }}
             maxLength={10}
             required 
+            disabled={disabled}
           />
         </div>
         <div>
           <Label required>Email ID</Label>
-          <Input type="email" placeholder="examiner@institution.edu" value={data.email} onChange={(e) => field("email")(e.target.value)} required />
+          <Input 
+            type="email" 
+            placeholder="examiner@institution.edu" 
+            value={data.email} 
+            onChange={(e) => field("email")(e.target.value)} 
+            required 
+            disabled={disabled}
+          />
         </div>
         <div className="sm:col-span-2">
           <Label required>Address</Label>
@@ -306,6 +327,7 @@ const ExternalExaminerCard = ({ index, data, onChange, subjectId }) => {
             onChange={(e) => field("address")(e.target.value)}
             className={`${inputBase} resize-none leading-relaxed`}
             required
+            disabled={disabled}
           />
         </div>
       </div>
@@ -352,6 +374,11 @@ const Subject = ({ index, onChange }) => {
   const [assignedSubjectIds, setAssignedSubjectIds] = useState([]);
   const [internalExaminers, setInternalExaminers] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Existing data check
+  const [isDataLocked, setIsDataLocked] = useState(false);
+  const [existingData, setExistingData] = useState(null);
+  const [checkingExisting, setCheckingExisting] = useState(false);
 
   // Fetch subjects and internal examiners on mount
   useEffect(() => {
@@ -416,6 +443,70 @@ const Subject = ({ index, onChange }) => {
     fetchData();
   }, [userUid]);
 
+  // Check for existing exam data when semester and subject are selected
+  useEffect(() => {
+    const checkExistingData = async () => {
+      if (!semester || !subjectCode) {
+        setIsDataLocked(false);
+        setExistingData(null);
+        return;
+      }
+
+      setCheckingExisting(true);
+      try {
+        const response = await axios.get(
+          `${BACKEND_URL}/api/exam-data/check/${semester}/${subjectCode}`
+        );
+        
+        if (response.data.exists) {
+          console.log('Existing exam data found:', response.data.data);
+          const data = response.data.data;
+          
+          // Populate form with existing data
+          setStudentsEnrolled(data.studentsEnrolled?.toString() || "");
+          setVerification(data.verification || "No");
+          
+          // Set internal examiners
+          if (data.internals && data.internals.length > 0) {
+            const internalData = data.internals.map(ie => ({
+              name: ie.name || ""
+            }));
+            setInternals(internalData);
+            setExaminerCount(internalData.length.toString());
+          }
+          
+          // Set external examiners
+          if (data.externals && data.externals.length > 0) {
+            const externalData = data.externals.map(ee => ({
+              name: ee.name || "",
+              address: ee.address || "",
+              contact: ee.contact || "",
+              email: ee.email || "",
+              yearsOfExperience: ee.yearsOfExperience?.toString() || ""
+            }));
+            setExternals(externalData);
+          }
+          
+          setExistingData(data);
+          setIsDataLocked(true);
+        } else {
+          // No existing data, reset to normal state
+          setIsDataLocked(false);
+          setExistingData(null);
+        }
+      } catch (err) {
+        console.error("Error checking existing data:", err);
+        // On error, allow editing
+        setIsDataLocked(false);
+        setExistingData(null);
+      } finally {
+        setCheckingExisting(false);
+      }
+    };
+
+    checkExistingData();
+  }, [semester, subjectCode]);
+
   const handleExaminerCount = (val) => {
     setExaminerCount(val);
     setInternals((prev) => syncArray(prev, val, blankInternal));
@@ -446,9 +537,9 @@ const Subject = ({ index, onChange }) => {
   // Lift state up to App whenever anything changes
   useEffect(() => {
     if (onChange) {
-      onChange(index, { subjectName, subjectCode, semester, studentsEnrolled, verification, internals, externals });
+      onChange(index, { subjectName, subjectCode, semester, studentsEnrolled, verification, internals, externals, isDataLocked });
     }
-  }, [subjectName, subjectCode, semester, studentsEnrolled, verification, internals, externals]);
+  }, [subjectName, subjectCode, semester, studentsEnrolled, verification, internals, externals, isDataLocked]);
 
   const semesterLabels = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
 
@@ -561,9 +652,32 @@ const Subject = ({ index, onChange }) => {
                 }}
                 className={`${inputBase} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                 required
+                disabled={isDataLocked}
               />
             </div>
           </div>
+
+          {/* Locked Data Warning Banner */}
+          {isDataLocked && (
+            <div className="mb-5 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl p-4 shadow-lg">
+              <div className="flex items-start gap-3">
+                <div className="shrink-0 w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-bold text-amber-900 mb-1 font-[Syne,sans-serif]">
+                    ⚠️ Data Already Submitted - Read-Only Mode
+                  </h4>
+                  <p className="text-xs text-amber-800 font-[DM_Sans,sans-serif] leading-relaxed">
+                    Exam data for this semester and subject has already been submitted. All fields are locked to prevent accidental changes. 
+                    If you need to make updates, please contact the administrator.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <DividerLine />
 
@@ -573,6 +687,7 @@ const Subject = ({ index, onChange }) => {
               value={verification}
               onChange={setVerification}
               name={`subject-verification-${id}`}
+              disabled={isDataLocked}
             />
           </div>
 
@@ -582,7 +697,7 @@ const Subject = ({ index, onChange }) => {
           <div className="mb-5">
             <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
               <SectionHeading icon="👥" title="Examiners" subtitle="Internal and External examiners (equal count)" />
-              <CountStepper label="Count" value={examinerCount} onChange={handleExaminerCount} min={1} />
+              <CountStepper label="Count" value={examinerCount} onChange={handleExaminerCount} min={1} disabled={isDataLocked} />
             </div>
 
             {/* Internal Examiners */}
@@ -602,6 +717,7 @@ const Subject = ({ index, onChange }) => {
                       onChange={updateInternal} 
                       subjectId={id}
                       internalExaminers={internalExaminers}
+                      disabled={isDataLocked}
                     />
                   ))}
                 </div>
@@ -613,7 +729,7 @@ const Subject = ({ index, onChange }) => {
               <h4 className="text-[12px] font-bold text-[#1a2e4a] mb-3 font-[Syne,sans-serif]">🏛️ External Examiners</h4>
               <div className="flex flex-col gap-5">
                 {externals.map((examiner, i) => (
-                  <ExternalExaminerCard key={i} index={i} data={examiner} onChange={updateExternal} subjectId={id} />
+                  <ExternalExaminerCard key={i} index={i} data={examiner} onChange={updateExternal} subjectId={id} disabled={isDataLocked} />
                 ))}
               </div>
             </div>
