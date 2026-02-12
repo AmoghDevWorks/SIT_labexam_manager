@@ -1089,31 +1089,31 @@ const ManageSubject = () => {
       <div className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-100 to-emerald-50 font-[DM_Sans,sans-serif]">
 
         {/* ── Header ── */}
-        <header className="sticky top-0 z-40 flex items-center justify-between px-8 h-[68px] bg-gradient-to-r from-[#0f1f3d] to-[#162847] shadow-[0_4px_24px_rgba(15,31,61,0.25)]">
-          <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6 md:px-8 h-[60px] sm:h-[68px] md:h-[72px] bg-gradient-to-r from-[#0f1f3d] to-[#162847] shadow-[0_4px_24px_rgba(15,31,61,0.25)]">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => navigate(-1)}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6b85a3] hover:text-[#00c9a7] hover:bg-white/5 transition-all duration-150"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-[#6b85a3] hover:text-[#00c9a7] hover:bg-white/5 transition-all duration-150"
             >
-              <svg viewBox="0 0 18 18" className="w-4 h-4" fill="none">
+              <svg viewBox="0 0 18 18" className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none">
                 <path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
-            <div className="w-px h-5 bg-white/10" />
-            <div className="w-8 h-8 rounded-lg bg-[#00c9a7]/15 border border-[#00c9a7]/30 flex items-center justify-center">
-              <svg viewBox="0 0 18 18" className="w-4 h-4" fill="none">
+            <div className="w-px h-4 sm:h-5 bg-white/10" />
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#00c9a7]/15 border border-[#00c9a7]/30 flex items-center justify-center">
+              <svg viewBox="0 0 18 18" className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none">
                 <rect x="2" y="2" width="6" height="6" rx="1.5" stroke="#00c9a7" strokeWidth="1.4"/>
                 <rect x="10" y="2" width="6" height="6" rx="1.5" stroke="#00c9a7" strokeWidth="1.4"/>
                 <rect x="2" y="10" width="6" height="6" rx="1.5" stroke="#00c9a7" strokeWidth="1.4"/>
                 <rect x="10" y="10" width="6" height="6" rx="1.5" stroke="#00c9a7" strokeWidth="1.4"/>
               </svg>
             </div>
-            <span className="text-white text-[14px] font-bold tracking-wide font-[Syne,sans-serif]">
+            <span className="text-white text-[10px] sm:text-xs md:text-sm font-bold tracking-wide leading-tight font-[Syne,sans-serif]">
               Manage Subjects
             </span>
           </div>
-          <span className="text-[#00c9a7] text-[11px] font-bold tracking-widest uppercase px-3.5 py-1.5 rounded-full border border-[#00c9a7]/40 bg-[#00c9a7]/10 font-[Syne,sans-serif]">
-            Admin Portal
+          <span className="text-[#00c9a7] text-[9px] sm:text-[10px] md:text-xs font-bold tracking-widest uppercase px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 rounded-full border border-[#00c9a7]/40 bg-[#00c9a7]/10 font-[Syne,sans-serif]">
+            <span>Admin Portal</span>
           </span>
         </header>
 
