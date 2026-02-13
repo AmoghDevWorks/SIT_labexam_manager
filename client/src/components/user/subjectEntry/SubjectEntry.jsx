@@ -15,8 +15,18 @@ const SubjectEntry = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalAction, setModalAction] = useState(null); // { type: 'register' | 'delete', subject }
   const [processing, setProcessing] = useState(false);
+  const [toasts, setToasts] = useState([]);
 
   const semesterLabels = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
+
+  // Toast notification system
+  const showToast = (message, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(toast => toast.id !== id));
+    }, 4000);
+  };
 
   // Check if entry is allowed
   useEffect(() => {
@@ -70,13 +80,13 @@ const SubjectEntry = () => {
         internalExaminerId: userUid
       });
 
-      alert('✅ Successfully registered to subject!');
+      showToast('Successfully registered to subject!', 'success');
       setShowModal(false);
       setModalAction(null);
       fetchData(); // Refresh data
     } catch (error) {
       console.error('Error registering:', error);
-      alert(`❌ ${error.response?.data?.message || 'Failed to register'}`);
+      showToast(error.response?.data?.message || 'Failed to register', 'error');
     } finally {
       setProcessing(false);
     }
@@ -89,13 +99,13 @@ const SubjectEntry = () => {
     try {
       await axios.delete(`${BACKEND_URL}/api/subject-assignments/${modalAction.assignment._id}`);
 
-      alert('✅ Successfully unregistered from subject!');
+      showToast('Successfully unregistered from subject!', 'success');
       setShowModal(false);
       setModalAction(null);
       fetchData(); // Refresh data
     } catch (error) {
       console.error('Error deleting:', error);
-      alert(`❌ ${error.response?.data?.message || 'Failed to unregister'}`);
+      showToast(error.response?.data?.message || 'Failed to unregister', 'error');
     } finally {
       setProcessing(false);
     }
@@ -357,6 +367,52 @@ const SubjectEntry = () => {
           </div>
         </div>
       )}
+
+      {/* Toast Notifications */}
+      <div className="fixed bottom-6 right-6 z-[60] flex flex-col gap-3 pointer-events-none">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`pointer-events-auto min-w-[300px] max-w-md px-5 py-4 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.2)] backdrop-blur-md border transform transition-all duration-300 ease-out animate-[slideInRight_0.3s_ease-out] ${
+              toast.type === 'success'
+                ? 'bg-gradient-to-r from-emerald-500/95 to-emerald-600/95 border-emerald-400/50'
+                : 'bg-gradient-to-r from-rose-500/95 to-rose-600/95 border-rose-400/50'
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                {toast.type === 'success' ? (
+                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none">
+                    <path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-white font-[DM_Sans,sans-serif] text-[14px] font-medium leading-relaxed">
+                  {toast.message}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <style>{`
+        @keyframes slideInRight {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </>
   );
 };
