@@ -16,4 +16,16 @@ const internalExaminerSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Cascade delete: Remove all subject assignments when examiner is deleted
+internalExaminerSchema.pre('findOneAndDelete', async function(next) {
+  try {
+    const examinerId = this.getQuery()._id;
+    const SubjectAssignment = mongoose.model('SubjectAssignment');
+    await SubjectAssignment.deleteMany({ internalExaminerId: examinerId });
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = mongoose.model("InternalExaminer", internalExaminerSchema);

@@ -23,4 +23,16 @@ const subjectSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Cascade delete: Remove all subject assignments when subject is deleted
+subjectSchema.pre('findOneAndDelete', async function(next) {
+  try {
+    const subjectId = this.getQuery()._id;
+    const SubjectAssignment = mongoose.model('SubjectAssignment');
+    await SubjectAssignment.deleteMany({ subjectId: subjectId });
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = mongoose.model("Subject", subjectSchema);
