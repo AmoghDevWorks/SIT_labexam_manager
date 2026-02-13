@@ -379,6 +379,17 @@ const Subject = ({ index, onChange }) => {
   const [isDataLocked, setIsDataLocked] = useState(false);
   const [existingData, setExistingData] = useState(null);
   const [checkingExisting, setCheckingExisting] = useState(false);
+  
+  // Toast notifications
+  const [toasts, setToasts] = useState([]);
+
+  const showToast = (message, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(toast => toast.id !== id));
+    }, 4000);
+  };
 
   // Fetch subjects and internal examiners on mount
   useEffect(() => {
@@ -405,13 +416,12 @@ const Subject = ({ index, onChange }) => {
         console.log('Examiners response:', examinersRes.data);
         console.log('Assignments response:', assignedRes.data);
         
-        // The backend returns subjects directly, not assignments
-        // So assignedRes.data is already an array of subject objects
-        const assignedSubjectsFromAPI = assignedRes.data;
-        console.log('Assigned subjects from API:', assignedSubjectsFromAPI);
+        // The backend returns assignment objects with populated subjectId
+        const assignments = assignedRes.data;
+        console.log('Assignments from API:', assignments);
         
-        // Get assigned subject IDs
-        const assignedIds = assignedSubjectsFromAPI.map(subject => subject._id);
+        // Get assigned subject IDs from the populated subjectId field
+        const assignedIds = assignments.map(assignment => assignment.subjectId?._id).filter(Boolean);
         console.log('Assigned subject IDs:', assignedIds);
         setAssignedSubjectIds(assignedIds);
         
@@ -436,6 +446,7 @@ const Subject = ({ index, onChange }) => {
       } catch (err) {
         console.error("Failed to fetch data:", err);
         console.error("Error details:", err.response?.data);
+        showToast('Failed to load subjects and examiners', 'error');
       } finally {
         setLoading(false);
       }
@@ -496,6 +507,7 @@ const Subject = ({ index, onChange }) => {
         }
       } catch (err) {
         console.error("Error checking existing data:", err);
+        showToast('Error checking existing data', 'error');
         // On error, allow editing
         setIsDataLocked(false);
         setExistingData(null);
@@ -681,18 +693,6 @@ const Subject = ({ index, onChange }) => {
 
           <DividerLine />
 
-          {/* Verification Field - At Subject Level */}
-          <div className="mb-5">
-            <VerificationRadio
-              value={verification}
-              onChange={setVerification}
-              name={`subject-verification-${id}`}
-              disabled={isDataLocked}
-            />
-          </div>
-
-          <DividerLine />
-
           {/* Examiners Count Control */}
           <div className="mb-5">
             <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
@@ -735,8 +735,66 @@ const Subject = ({ index, onChange }) => {
             </div>
           </div>
 
+          <DividerLine />
+
+          {/* Verification Field - At Subject Level */}
+          <div className="mb-5">
+            <VerificationRadio
+              value={verification}
+              onChange={setVerification}
+              name={`subject-verification-${id}`}
+              disabled={isDataLocked}
+            />
+          </div>
+
         </div>
       </div>
+
+      {/* Toast Notifications */}
+      <div className="fixed bottom-6 right-6 z-[60] flex flex-col gap-3 pointer-events-none">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`pointer-events-auto min-w-[300px] max-w-md px-5 py-4 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.2)] backdrop-blur-md border transform transition-all duration-300 ease-out animate-[slideInRight_0.3s_ease-out] ${
+              toast.type === 'success'
+                ? 'bg-gradient-to-r from-emerald-500/95 to-emerald-600/95 border-emerald-400/50'
+                : 'bg-gradient-to-r from-rose-500/95 to-rose-600/95 border-rose-400/50'
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                {toast.type === 'success' ? (
+                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none">
+                    <path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-white font-[DM_Sans,sans-serif] text-[14px] font-medium leading-relaxed">
+                  {toast.message}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <style>{`
+        @keyframes slideInRight {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </>
   );
 };
