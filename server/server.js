@@ -9,6 +9,7 @@ const internalExaminerRoutes = require("./routes/internalExaminerRoutes");
 const examDataRoutes = require("./routes/examDataRoutes");
 const subjectAssignmentRoutes = require("./routes/subjectAssignmentRoutes");
 const documentRoutes = require("./routes/documentRoutes");
+const manageSubjectEntryRoutes = require("./routes/manageSubjectEntryRoutes");
 
 const app = express();
 
@@ -57,6 +58,7 @@ app.use("/api/internal-examiners", internalExaminerRoutes);
 app.use("/api/exam-data", examDataRoutes);
 app.use("/api/subject-assignments", subjectAssignmentRoutes);
 app.use("/api/documents", documentRoutes);
+app.use("/api/manage-subject-entry", manageSubjectEntryRoutes);
 
 const PORT = process.env.PORT || 5000;
 

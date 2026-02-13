@@ -63,3 +63,15 @@
 | GET | `/api/subject-assignments/subject/:subjectId` | Get all internal examiners assigned to a specific subject with examiner details populated |
 | GET | `/api/subject-assignments/examiner/:examinerId` | Get all subjects assigned to a specific internal examiner with subject details populated |
 | GET | `/api/subject-assignments/unassigned/:subjectId` | Get all internal examiners NOT assigned to a specific subject (available for assignment) |
+
+---
+
+## Manage Subject Entry Routes — `/api/manage-subject-entry`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/manage-subject-entry` | Create subject entry configuration. Only one configuration document should exist |
+| GET | `/api/manage-subject-entry` | Retrieve the current subject entry status (allowSubjectEntry boolean) |
+| PATCH | `/api/manage-subject-entry/toggle` | Toggle the `allowSubjectEntry` field between true and false |
+| PUT | `/api/manage-subject-entry` | Update subject entry configuration with a specific boolean value |
+| DELETE | `/api/manage-subject-entry` | Delete the subject entry configuration document |

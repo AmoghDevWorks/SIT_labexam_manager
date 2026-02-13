@@ -21,6 +21,7 @@ import ManageInternalExaminer from "./admin/ManageInternalExaminer";
 import Home from "./Home";
 import UserLogin from "./user/UserLogin";
 import ManageExamData from "./admin/ManageExamData";
+import ManageSubjectEntry from "./admin/ManageSubjectEntry";
 
 // Layout Component
 const Layout = () => {
@@ -88,6 +89,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <ManageExamData />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: '/admin/manageSubjectEntry',
+        element: (
+          <ProtectedRoute>
+            <ManageSubjectEntry />
           </ProtectedRoute>
         )
       },
