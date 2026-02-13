@@ -4,9 +4,10 @@ import { useUser } from '../utils/userContext';
 import Hero from './manualUpload/Hero';
 import UploadExcel from './excelUpload/UploadExcel';
 import UploadDocs from './uploadDocs/UploadDocs';
+import SubjectEntry from './subjectEntry/SubjectEntry';
 
 const UserDashboard = () => {
-  const [activeTab, setActiveTab] = useState('hero'); // 'hero' | 'upload' | 'docs'
+  const [activeTab, setActiveTab] = useState('hero'); // 'hero' | 'upload' | 'docs' | 'entry'
   const { userUid, setUserUid, setUserName } = useUser();
   const navigate = useNavigate();
 
@@ -29,11 +30,12 @@ const UserDashboard = () => {
       {/* Toggle Section */}
       <div className="sticky top-0 z-50 bg-gradient-to-r from-[#0f1f3d] to-[#162847] shadow-[0_4px_24px_rgba(15,31,61,0.25)]">
         <div className="max-w-[960px] mx-auto px-4 sm:px-6 py-3 sm:py-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
-            <div className="flex items-center justify-center gap-1.5 sm:gap-2 bg-[#1a2e4a]/30 p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-[#00c9a7]/20 backdrop-blur-sm w-full md:w-auto">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-3 lg:gap-4">
+            {/* 2x2 grid on small/medium, 1x4 row on large */}
+            <div className="grid grid-cols-2 lg:flex lg:flex-row gap-1.5 sm:gap-2 bg-[#1a2e4a]/30 p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-[#00c9a7]/20 backdrop-blur-sm w-full lg:w-auto">
               <button
                 onClick={() => setActiveTab('hero')}
-                className={`relative flex-1 md:flex-none px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold tracking-wide transition-all duration-300 font-[Syne,sans-serif] ${
+                className={`relative px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold tracking-wide transition-all duration-300 font-[Syne,sans-serif] ${
                   activeTab === 'hero'
                     ? 'bg-gradient-to-r from-[#00c9a7] to-[#00a98c] text-white shadow-[0_4px_16px_rgba(0,201,167,0.4)]'
                     : 'text-[#00c9a7]/60 hover:text-[#00c9a7] hover:bg-[#00c9a7]/10'
@@ -43,7 +45,7 @@ const UserDashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('upload')}
-                className={`relative flex-1 md:flex-none px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold tracking-wide transition-all duration-300 font-[Syne,sans-serif] ${
+                className={`relative px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold tracking-wide transition-all duration-300 font-[Syne,sans-serif] ${
                   activeTab === 'upload'
                     ? 'bg-gradient-to-r from-[#00c9a7] to-[#00a98c] text-white shadow-[0_4px_16px_rgba(0,201,167,0.4)]'
                     : 'text-[#00c9a7]/60 hover:text-[#00c9a7] hover:bg-[#00c9a7]/10'
@@ -53,13 +55,23 @@ const UserDashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('docs')}
-                className={`relative flex-1 md:flex-none px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold tracking-wide transition-all duration-300 font-[Syne,sans-serif] ${
+                className={`relative px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold tracking-wide transition-all duration-300 font-[Syne,sans-serif] ${
                   activeTab === 'docs'
                     ? 'bg-gradient-to-r from-[#00c9a7] to-[#00a98c] text-white shadow-[0_4px_16px_rgba(0,201,167,0.4)]'
                     : 'text-[#00c9a7]/60 hover:text-[#00c9a7] hover:bg-[#00c9a7]/10'
                 }`}
               >
                 Upload Documents
+              </button>
+              <button
+                onClick={() => setActiveTab('entry')}
+                className={`relative px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold tracking-wide transition-all duration-300 font-[Syne,sans-serif] ${
+                  activeTab === 'entry'
+                    ? 'bg-gradient-to-r from-[#00c9a7] to-[#00a98c] text-white shadow-[0_4px_16px_rgba(0,201,167,0.4)]'
+                    : 'text-[#00c9a7]/60 hover:text-[#00c9a7] hover:bg-[#00c9a7]/10'
+                }`}
+              >
+                Subject Entry
               </button>
             </div>
             
@@ -80,7 +92,7 @@ const UserDashboard = () => {
 
       {/* Content Section */}
       <div className="w-full">
-        {activeTab === 'hero' ? <Hero /> : activeTab === 'upload' ? <UploadExcel /> : <UploadDocs />}
+        {activeTab === 'hero' ? <Hero /> : activeTab === 'upload' ? <UploadExcel /> : activeTab === 'docs' ? <UploadDocs /> : <SubjectEntry />}
       </div>
 
       <style>{`

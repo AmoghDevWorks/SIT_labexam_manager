@@ -85,9 +85,7 @@ exports.getSubjectsByExaminer = async (req, res) => {
       .populate("subjectId")
       .sort({ createdAt: -1 });
 
-    const subjects = assignments.map(assignment => assignment.subjectId);
-
-    res.json(subjects);
+    res.json(assignments);
   } catch (error) {
     console.error("Error fetching examiner subjects:", error);
     res.status(500).json({ message: "Server error", error: error.message });
