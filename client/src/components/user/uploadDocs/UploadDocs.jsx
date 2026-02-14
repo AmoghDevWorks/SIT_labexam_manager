@@ -20,6 +20,17 @@ const UploadDocs = () => {
   
   // Existing documents state
   const [existingDocs, setExistingDocs] = useState({ syllabus: null, modelQP: null });
+  
+  // Toast notifications
+  const [toasts, setToasts] = useState([]);
+
+  const showToast = (message, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(toast => toast.id !== id));
+    }, 4000);
+  };
 
   const semesterLabels = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
 
@@ -34,10 +45,14 @@ const UploadDocs = () => {
       setLoading(true);
       try {
         const response = await axios.get(`${BACKEND_URL}/api/subject-assignments/examiner/${userUid}`);
-        const assignedSubjects = response.data.filter(s => s.semester === selectedSemester);
+        // Filter by semester from the populated subjectId
+        const assignedSubjects = response.data
+          .filter(assignment => assignment.subjectId?.semester === selectedSemester)
+          .map(assignment => assignment.subjectId);
         setSubjects(assignedSubjects);
       } catch (error) {
         console.error("Error fetching subjects:", error);
+        showToast('Failed to load subjects', 'error');
       } finally {
         setLoading(false);
       }
@@ -94,13 +109,13 @@ const UploadDocs = () => {
 
   const handleUpload = async (type) => {
     if (!selectedSubject) {
-      alert("Please select a subject first");
+      showToast("Please select a subject first", 'error');
       return;
     }
 
     const file = type === "syllabus" ? syllabusFile : modelQPFile;
     if (!file) {
-      alert("Please select a file to upload");
+      showToast("Please select a file to upload", 'error');
       return;
     }
 
@@ -122,6 +137,8 @@ const UploadDocs = () => {
         [type]: { success: true, message: response.data.message }
       }));
 
+      showToast(response.data.message || 'File uploaded successfully', 'success');
+
       // Clear file input
       if (type === "syllabus") setSyllabusFile(null);
       else setModelQPFile(null);
@@ -137,10 +154,12 @@ const UploadDocs = () => {
       setExistingDocs(checkResponse.data);
 
     } catch (error) {
+      const errorMsg = error.response?.data?.message || "Upload failed";
       setUploadStatus(prev => ({
         ...prev,
-        [type]: { success: false, message: error.response?.data?.message || "Upload failed" }
+        [type]: { success: false, message: errorMsg }
       }));
+      showToast(errorMsg, 'error');
     } finally {
       setUploading(false);
     }
@@ -274,6 +293,52 @@ const UploadDocs = () => {
 
         </main>
       </div>
+
+      {/* Toast Notifications */}
+      <div className="fixed bottom-6 right-6 z-[60] flex flex-col gap-3 pointer-events-none">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`pointer-events-auto min-w-[300px] max-w-md px-5 py-4 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.2)] backdrop-blur-md border transform transition-all duration-300 ease-out animate-[slideInRight_0.3s_ease-out] ${
+              toast.type === 'success'
+                ? 'bg-gradient-to-r from-emerald-500/95 to-emerald-600/95 border-emerald-400/50'
+                : 'bg-gradient-to-r from-rose-500/95 to-rose-600/95 border-rose-400/50'
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                {toast.type === 'success' ? (
+                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none">
+                    <path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-white font-[DM_Sans,sans-serif] text-[14px] font-medium leading-relaxed">
+                  {toast.message}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <style>{`
+        @keyframes slideInRight {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </>
   );
 };
