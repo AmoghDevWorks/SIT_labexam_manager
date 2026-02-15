@@ -93,6 +93,10 @@ const Hero = () => {
       // Show success message
       alert(`✅ Successfully saved ${subjectsArray.length} subject(s) data!`);
 
+      // Clear all form data after successful save
+      setSubjectsData({});
+      setInputVal("1");
+
       // Reset success state after 3 seconds
       setTimeout(() => setSaveSuccess(false), 3000);
       

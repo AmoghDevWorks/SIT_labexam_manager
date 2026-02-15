@@ -563,6 +563,20 @@ const Subject = ({ index, onChange }) => {
     }
   }, [selectedSemester]);
 
+  // Reset form data when subject changes (not on initial mount or semester change)
+  const prevSubjectRef = useRef("");
+  useEffect(() => {
+    // Only reset if subject actually changed (not empty -> filled, but filled -> different)
+    if (prevSubjectRef.current && subjectName && prevSubjectRef.current !== subjectName) {
+      setStudentsEnrolled("");
+      setVerification("No");
+      setExaminerCount("1");
+      setInternals([blankInternal()]);
+      setExternals([blankExternal()]);
+    }
+    prevSubjectRef.current = subjectName;
+  }, [subjectName]);
+
   // Lift state up to App whenever anything changes
   useEffect(() => {
     if (onChange) {
