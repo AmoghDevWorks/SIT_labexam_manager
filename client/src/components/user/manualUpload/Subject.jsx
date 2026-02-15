@@ -546,6 +546,23 @@ const Subject = ({ index, onChange }) => {
     ? subjects.filter(s => s.semester === selectedSemester)
     : subjects;
 
+  // Reset form data when semester changes
+  useEffect(() => {
+    // Reset all form fields when semester changes (but not on initial mount)
+    if (selectedSemester) {
+      setSubjectName("");
+      setSubjectCode("");
+      setSemester("");
+      setStudentsEnrolled("");
+      setVerification("No");
+      setExaminerCount("1");
+      setInternals([blankInternal()]);
+      setExternals([blankExternal()]);
+      setIsDataLocked(false);
+      setExistingData(null);
+    }
+  }, [selectedSemester]);
+
   // Lift state up to App whenever anything changes
   useEffect(() => {
     if (onChange) {
@@ -664,7 +681,7 @@ const Subject = ({ index, onChange }) => {
                 }}
                 className={`${inputBase} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                 required
-                disabled={isDataLocked}
+                disabled={isDataLocked || !selectedSemester || !subjectName}
               />
             </div>
           </div>
@@ -697,7 +714,7 @@ const Subject = ({ index, onChange }) => {
           <div className="mb-5">
             <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
               <SectionHeading icon="👥" title="Examiners" subtitle="Internal and External examiners (equal count)" />
-              <CountStepper label="Count" value={examinerCount} onChange={handleExaminerCount} min={1} disabled={isDataLocked} />
+              <CountStepper label="Count" value={examinerCount} onChange={handleExaminerCount} min={1} disabled={isDataLocked || !selectedSemester || !subjectName} />
             </div>
 
             {/* Internal Examiners */}
@@ -717,7 +734,7 @@ const Subject = ({ index, onChange }) => {
                       onChange={updateInternal} 
                       subjectId={id}
                       internalExaminers={internalExaminers}
-                      disabled={isDataLocked}
+                      disabled={isDataLocked || !selectedSemester || !subjectName}
                     />
                   ))}
                 </div>
@@ -729,7 +746,7 @@ const Subject = ({ index, onChange }) => {
               <h4 className="text-[12px] font-bold text-[#1a2e4a] mb-3 font-[Syne,sans-serif]">🏛️ External Examiners</h4>
               <div className="flex flex-col gap-5">
                 {externals.map((examiner, i) => (
-                  <ExternalExaminerCard key={i} index={i} data={examiner} onChange={updateExternal} subjectId={id} disabled={isDataLocked} />
+                  <ExternalExaminerCard key={i} index={i} data={examiner} onChange={updateExternal} subjectId={id} disabled={isDataLocked || !selectedSemester || !subjectName} />
                 ))}
               </div>
             </div>
@@ -743,7 +760,7 @@ const Subject = ({ index, onChange }) => {
               value={verification}
               onChange={setVerification}
               name={`subject-verification-${id}`}
-              disabled={isDataLocked}
+              disabled={isDataLocked || !selectedSemester || !subjectName}
             />
           </div>
 
