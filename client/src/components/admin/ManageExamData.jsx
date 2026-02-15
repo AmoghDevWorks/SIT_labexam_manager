@@ -16,6 +16,7 @@ const ManageExamData = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [showBulkDownloadModal, setShowBulkDownloadModal] = useState(false);
 
   const semesterLabels = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
 
@@ -101,6 +102,56 @@ const ManageExamData = () => {
     };
 
     downloadPDF(subjectsData, 1);
+  };
+
+  // Download Excel for all subjects in semester
+  const handleBulkDownloadExcel = () => {
+    if (examData.length === 0) {
+      alert('No exam data available for this semester');
+      return;
+    }
+
+    // Convert all exam data to the format expected by downloadExcel
+    const subjectsData = {};
+    examData.forEach((data, index) => {
+      subjectsData[index] = {
+        subjectName: data.subjectName,
+        subjectCode: data.subjectCode,
+        semester: data.semester,
+        studentsEnrolled: data.studentsEnrolled.toString(),
+        verification: data.verification,
+        internals: data.internals,
+        externals: data.externals
+      };
+    });
+
+    downloadExcel(subjectsData, examData.length);
+    setShowBulkDownloadModal(false);
+  };
+
+  // Download PDF for all subjects in semester
+  const handleBulkDownloadPDF = () => {
+    if (examData.length === 0) {
+      alert('No exam data available for this semester');
+      return;
+    }
+
+    // Convert all exam data to the format expected by downloadPDF
+    const subjectsData = {};
+    examData.forEach((data, index) => {
+      subjectsData[index] = {
+        subjectName: data.subjectName,
+        subjectCode: data.subjectCode,
+        semester: data.semester,
+        studentsEnrolled: data.studentsEnrolled.toString(),
+        verification: data.verification,
+        internals: data.internals,
+        externals: data.externals
+      };
+    });
+
+    downloadPDF(subjectsData, examData.length);
+    setShowBulkDownloadModal(false);
   };
 
   // Open edit modal
@@ -236,21 +287,37 @@ const ManageExamData = () => {
           {/* Semester Filter Card */}
           <div className="bg-white/85 backdrop-blur-md border border-[#00c9a7]/25 rounded-2xl px-9 py-8 mb-8 shadow-[0_8px_32px_rgba(15,31,61,0.12)]">
 
-            {/* Semester Selector */}
-            <div className="max-w-md">
-              <label className="block text-[11px] font-bold tracking-[0.1em] uppercase text-[#6b85a3] mb-2 font-[Syne,sans-serif]">
-                Select Semester <span className="text-[#00c9a7]">*</span>
-              </label>
-              <select
-                value={selectedSemester}
-                onChange={(e) => setSelectedSemester(e.target.value)}
-                className="semester-select w-full px-4 py-3 text-sm text-[#1a2e4a] bg-sky-50 border border-[#00c9a7]/25 rounded-xl outline-none transition-all duration-200 focus:border-[#00c9a7] focus:shadow-[0_0_0_3px_rgba(0,201,167,0.12)] font-[DM_Sans,sans-serif] cursor-pointer appearance-none"
-              >
-                <option value="">Choose Semester</option>
-                {semesterLabels.map((s) => (
-                  <option key={s} value={s}>Semester {s}</option>
-                ))}
-              </select>
+            <div className="flex flex-col md:flex-row md:items-end gap-4 md:gap-6">
+              {/* Semester Selector */}
+              <div className="flex-1 max-w-md">
+                <label className="block text-[11px] font-bold tracking-[0.1em] uppercase text-[#6b85a3] mb-2 font-[Syne,sans-serif]">
+                  Select Semester <span className="text-[#00c9a7]">*</span>
+                </label>
+                <select
+                  value={selectedSemester}
+                  onChange={(e) => setSelectedSemester(e.target.value)}
+                  className="semester-select w-full px-4 py-3 text-sm text-[#1a2e4a] bg-sky-50 border border-[#00c9a7]/25 rounded-xl outline-none transition-all duration-200 focus:border-[#00c9a7] focus:shadow-[0_0_0_3px_rgba(0,201,167,0.12)] font-[DM_Sans,sans-serif] cursor-pointer appearance-none"
+                >
+                  <option value="">Choose Semester</option>
+                  {semesterLabels.map((s) => (
+                    <option key={s} value={s}>Semester {s}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Bulk Download Button */}
+              {selectedSemester && examData.length > 0 && (
+                <button
+                  onClick={() => setShowBulkDownloadModal(true)}
+                  className="group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-[#00a98c] to-[#00c9a7] text-white rounded-xl shadow-[0_4px_16px_rgba(0,201,167,0.2)] hover:shadow-[0_6px_24px_rgba(0,201,167,0.3)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
+                >
+                  <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                  <svg className="relative w-5 h-5" viewBox="0 0 24 24" fill="none">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span className="relative text-[14px] font-bold font-[Syne,sans-serif] whitespace-nowrap">Download Sem Exam Data</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -686,6 +753,97 @@ const ManageExamData = () => {
                     <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Save Changes</span>
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Download Modal */}
+      {showBulkDownloadModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.3)] max-w-lg w-full overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-[#00a98c] to-[#00c9a7] px-8 py-6 border-b border-emerald-500/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-[22px] font-bold text-white font-[Syne,sans-serif]">
+                    Download Semester Data
+                  </h2>
+                  <p className="text-emerald-100 text-sm mt-1 font-[DM_Sans,sans-serif]">
+                    Semester {selectedSemester} • {examData.length} Subject{examData.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowBulkDownloadModal(false)}
+                  className="w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center justify-center"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-8">
+              <p className="text-[#6b85a3] text-sm mb-6 font-[DM_Sans,sans-serif]">
+                Choose a format to download all exam data for Semester {selectedSemester}:
+              </p>
+
+              {/* Download Buttons */}
+              <div className="space-y-3">
+                <button
+                  onClick={handleBulkDownloadExcel}
+                  className="w-full group relative flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-[#0f1f3d] to-[#162847] text-white rounded-xl shadow-[0_4px_16px_rgba(15,31,61,0.2)] hover:shadow-[0_6px_24px_rgba(0,201,167,0.2)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
+                >
+                  <span className="absolute inset-0 bg-gradient-to-r from-[#00c9a7]/0 via-[#00c9a7]/10 to-[#00c9a7]/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                  <div className="relative w-12 h-12 bg-[#00c9a7]/15 border border-[#00c9a7]/30 rounded-lg flex items-center justify-center shrink-0">
+                    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#00c9a7" strokeWidth="1.5" strokeLinejoin="round"/>
+                      <polyline points="14 2 14 8 20 8" stroke="#00c9a7" strokeWidth="1.5" strokeLinejoin="round"/>
+                      <path d="M8 13h8M8 17h5" stroke="#00c9a7" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                  </div>
+                  <div className="relative text-left flex-1">
+                    <p className="text-[15px] font-bold font-[Syne,sans-serif]">Download as Excel</p>
+                    <p className="text-xs text-[#00c9a7] mt-0.5 font-[DM_Sans,sans-serif]">XLSX format • All subjects included</p>
+                  </div>
+                  <svg className="relative w-5 h-5 text-[#00c9a7]" viewBox="0 0 24 24" fill="none">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+
+                <button
+                  onClick={handleBulkDownloadPDF}
+                  className="w-full group relative flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-[#00a98c] to-[#00c9a7] text-white rounded-xl shadow-[0_4px_16px_rgba(0,201,167,0.2)] hover:shadow-[0_6px_24px_rgba(0,201,167,0.3)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
+                >
+                  <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                  <div className="relative w-12 h-12 bg-white/15 border border-white/30 rounded-lg flex items-center justify-center shrink-0">
+                    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
+                      <polyline points="14 2 14 8 20 8" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
+                      <path d="M9 13h6M9 17h6" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                  </div>
+                  <div className="relative text-left flex-1">
+                    <p className="text-[15px] font-bold font-[Syne,sans-serif]">Download as PDF</p>
+                    <p className="text-xs text-white/80 mt-0.5 font-[DM_Sans,sans-serif]">PDF format • All subjects included</p>
+                  </div>
+                  <svg className="relative w-5 h-5 text-white" viewBox="0 0 24 24" fill="none">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-sky-50 border-t border-[#00c9a7]/20 px-8 py-4 flex justify-end">
+              <button
+                onClick={() => setShowBulkDownloadModal(false)}
+                className="px-6 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-[13px] font-bold font-[Syne,sans-serif] transition-colors"
+              >
+                Cancel
               </button>
             </div>
           </div>
