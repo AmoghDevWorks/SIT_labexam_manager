@@ -17,6 +17,8 @@ const ManageExamData = () => {
   const [editFormData, setEditFormData] = useState(null);
   const [saving, setSaving] = useState(false);
   const [showBulkDownloadModal, setShowBulkDownloadModal] = useState(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const semesterLabels = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
 
@@ -223,6 +225,31 @@ const ManageExamData = () => {
     }
   };
 
+  // Delete all exam data for semester
+  const handleDeleteSemesterData = async () => {
+    try {
+      setDeleting(true);
+
+      // Delete all exam data for the semester
+      await Promise.all(
+        examData.map(data => 
+          axios.delete(`${BACKEND_URL}/api/exam-data/${data._id}`)
+        )
+      );
+      
+      alert(`✅ All exam data for Semester ${selectedSemester} deleted successfully!`);
+      setShowDeleteConfirmModal(false);
+      
+      // Refresh data
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting exam data:', error);
+      alert(`❌ Error deleting exam data: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <>
       <style>{`
@@ -305,18 +332,31 @@ const ManageExamData = () => {
                 </select>
               </div>
 
-              {/* Bulk Download Button */}
+              {/* Action Buttons */}
               {selectedSemester && examData.length > 0 && (
-                <button
-                  onClick={() => setShowBulkDownloadModal(true)}
-                  className="group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-[#00a98c] to-[#00c9a7] text-white rounded-xl shadow-[0_4px_16px_rgba(0,201,167,0.2)] hover:shadow-[0_6px_24px_rgba(0,201,167,0.3)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
-                >
-                  <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                  <svg className="relative w-5 h-5" viewBox="0 0 24 24" fill="none">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <span className="relative text-[14px] font-bold font-[Syne,sans-serif] whitespace-nowrap">Download Sem Exam Data</span>
-                </button>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() => setShowBulkDownloadModal(true)}
+                    className="group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-[#00a98c] to-[#00c9a7] text-white rounded-xl shadow-[0_4px_16px_rgba(0,201,167,0.2)] hover:shadow-[0_6px_24px_rgba(0,201,167,0.3)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
+                  >
+                    <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                    <svg className="relative w-5 h-5" viewBox="0 0 24 24" fill="none">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span className="relative text-[14px] font-bold font-[Syne,sans-serif] whitespace-nowrap">Download Sem Exam Data</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowDeleteConfirmModal(true)}
+                    className="group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-rose-600 to-rose-700 text-white rounded-xl shadow-[0_4px_16px_rgba(225,29,72,0.2)] hover:shadow-[0_6px_24px_rgba(225,29,72,0.3)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
+                  >
+                    <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                    <svg className="relative w-5 h-5" viewBox="0 0 24 24" fill="none">
+                      <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span className="relative text-[14px] font-bold font-[Syne,sans-serif] whitespace-nowrap">Clear Exam Data</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -845,6 +885,94 @@ const ManageExamData = () => {
               >
                 Cancel
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.3)] max-w-md w-full overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-rose-600 to-rose-700 px-8 py-6 border-b border-rose-500/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 9v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <h2 className="text-[22px] font-bold text-white font-[Syne,sans-serif]">
+                    Confirm Delete
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setShowDeleteConfirmModal(false)}
+                  disabled={deleting}
+                  className="w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-8">
+              <div className="mb-6">
+                <p className="text-[#1a2e4a] text-base font-semibold mb-3 font-[Syne,sans-serif]">
+                  Are you sure you want to delete all exam data for Semester {selectedSemester}?
+                </p>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <div className="flex items-start gap-2">
+                    <svg className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 9v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <div>
+                      <p className="text-sm font-bold text-amber-900 mb-1 font-[Syne,sans-serif]">Warning</p>
+                      <p className="text-xs text-amber-800 font-[DM_Sans,sans-serif]">
+                        This will permanently delete exam data for {examData.length} subject{examData.length !== 1 ? 's' : ''}. This action cannot be undone.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirmModal(false)}
+                  disabled={deleting}
+                  className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl text-[14px] font-bold font-[Syne,sans-serif] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteSemesterData}
+                  disabled={deleting}
+                  className="flex-1 group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-rose-600 to-rose-700 text-white rounded-xl shadow-[0_4px_16px_rgba(225,29,72,0.2)] hover:shadow-[0_6px_24px_rgba(225,29,72,0.3)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                >
+                  <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                  {deleting ? (
+                    <>
+                      <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="3"/>
+                        <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                      </svg>
+                      <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Deleting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="relative w-5 h-5" viewBox="0 0 24 24" fill="none">
+                        <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Delete All</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
