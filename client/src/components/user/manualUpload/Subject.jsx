@@ -648,6 +648,7 @@ const Subject = ({ index, onChange }) => {
                   placeholder={selectedSemester ? "Select or search subject code..." : "Select semester first..."}
                   label="subject codes"
                   required
+                  disabled={!selectedSemester}
                 />
               )}
               {selectedSemester && filteredSubjects.length === 0 && (
