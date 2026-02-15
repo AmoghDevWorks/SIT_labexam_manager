@@ -531,12 +531,12 @@ const Subject = ({ index, onChange }) => {
   const updateExternal = useCallback((idx, key, val) =>
     setExternals((prev) => prev.map((e, i) => (i === idx ? { ...e, [key]: val } : e))), []);
 
-  // When subject name is selected, auto-fill subject code and semester
-  const handleSubjectNameChange = (name) => {
-    setSubjectName(name);
-    const subject = subjects.find(s => s.name === name);
+  // When subject code is selected, auto-fill subject name and semester
+  const handleSubjectCodeChange = (code) => {
+    setSubjectCode(code);
+    const subject = subjects.find(s => s.code === code);
     if (subject) {
-      setSubjectCode(subject.code);
+      setSubjectName(subject.name);
       setSemester(subject.semester);
     }
   };
@@ -567,15 +567,15 @@ const Subject = ({ index, onChange }) => {
   const prevSubjectRef = useRef("");
   useEffect(() => {
     // Only reset if subject actually changed (not empty -> filled, but filled -> different)
-    if (prevSubjectRef.current && subjectName && prevSubjectRef.current !== subjectName) {
+    if (prevSubjectRef.current && subjectCode && prevSubjectRef.current !== subjectCode) {
       setStudentsEnrolled("");
       setVerification("No");
       setExaminerCount("1");
       setInternals([blankInternal()]);
       setExternals([blankExternal()]);
     }
-    prevSubjectRef.current = subjectName;
-  }, [subjectName]);
+    prevSubjectRef.current = subjectCode;
+  }, [subjectCode]);
 
   // Lift state up to App whenever anything changes
   useEffect(() => {
@@ -635,18 +635,18 @@ const Subject = ({ index, onChange }) => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-2">
             <div>
-              <Label required>Subject Name</Label>
+              <Label required>Subject Code</Label>
               {loading ? (
                 <div className="w-full px-4 py-2.5 bg-sky-50 border border-[#00c9a7]/25 rounded-xl animate-pulse">
                   <div className="h-4 bg-[#00c9a7]/20 rounded"></div>
                 </div>
               ) : (
                 <SearchableDropdown
-                  options={filteredSubjects.map(s => s.name)}
-                  value={subjectName}
-                  onChange={handleSubjectNameChange}
-                  placeholder={selectedSemester ? "Select or search subject..." : "Select semester first..."}
-                  label="subjects"
+                  options={filteredSubjects.map(s => s.code)}
+                  value={subjectCode}
+                  onChange={handleSubjectCodeChange}
+                  placeholder={selectedSemester ? "Select or search subject code..." : "Select semester first..."}
+                  label="subject codes"
                   required
                 />
               )}
@@ -663,12 +663,12 @@ const Subject = ({ index, onChange }) => {
               )}
             </div>
             <div>
-              <Label required>Subject Code</Label>
+              <Label required>Subject Name</Label>
               <Input
-                placeholder="Auto-filled from subject"
-                value={subjectCode}
-                onChange={(e) => setSubjectCode(e.target.value)}
-                className={`${inputBase} ${subjectName ? 'bg-[#00c9a7]/5 font-semibold text-[#00a98c]' : ''}`}
+                placeholder="Auto-filled from subject code"
+                value={subjectName}
+                onChange={(e) => setSubjectName(e.target.value)}
+                className={`${inputBase} ${subjectCode ? 'bg-[#00c9a7]/5 font-semibold text-[#00a98c]' : ''}`}
                 required
                 readOnly
               />
@@ -695,7 +695,7 @@ const Subject = ({ index, onChange }) => {
                 }}
                 className={`${inputBase} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                 required
-                disabled={isDataLocked || !selectedSemester || !subjectName}
+                disabled={isDataLocked || !selectedSemester || !subjectCode}
               />
             </div>
           </div>
@@ -728,7 +728,7 @@ const Subject = ({ index, onChange }) => {
           <div className="mb-5">
             <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
               <SectionHeading icon="👥" title="Examiners" subtitle="Internal and External examiners (equal count)" />
-              <CountStepper label="Count" value={examinerCount} onChange={handleExaminerCount} min={1} disabled={isDataLocked || !selectedSemester || !subjectName} />
+              <CountStepper label="Count" value={examinerCount} onChange={handleExaminerCount} min={1} disabled={isDataLocked || !selectedSemester || !subjectCode} />
             </div>
 
             {/* Internal Examiners */}
@@ -748,7 +748,7 @@ const Subject = ({ index, onChange }) => {
                       onChange={updateInternal} 
                       subjectId={id}
                       internalExaminers={internalExaminers}
-                      disabled={isDataLocked || !selectedSemester || !subjectName}
+                      disabled={isDataLocked || !selectedSemester || !subjectCode}
                     />
                   ))}
                 </div>
@@ -760,7 +760,7 @@ const Subject = ({ index, onChange }) => {
               <h4 className="text-[12px] font-bold text-[#1a2e4a] mb-3 font-[Syne,sans-serif]">🏛️ External Examiners</h4>
               <div className="flex flex-col gap-5">
                 {externals.map((examiner, i) => (
-                  <ExternalExaminerCard key={i} index={i} data={examiner} onChange={updateExternal} subjectId={id} disabled={isDataLocked || !selectedSemester || !subjectName} />
+                  <ExternalExaminerCard key={i} index={i} data={examiner} onChange={updateExternal} subjectId={id} disabled={isDataLocked || !selectedSemester || !subjectCode} />
                 ))}
               </div>
             </div>
@@ -774,7 +774,7 @@ const Subject = ({ index, onChange }) => {
               value={verification}
               onChange={setVerification}
               name={`subject-verification-${id}`}
-              disabled={isDataLocked || !selectedSemester || !subjectName}
+              disabled={isDataLocked || !selectedSemester || !subjectCode}
             />
           </div>
 
