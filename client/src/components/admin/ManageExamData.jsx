@@ -506,6 +506,35 @@ const ManageExamData = () => {
                 </div>
               </div>
 
+              {/* Tracking Information */}
+              <div className="mb-6 bg-gradient-to-r from-emerald-50 to-sky-50 border border-emerald-200 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0">
+                    <svg className="w-5 h-5 text-emerald-600" viewBox="0 0 24 24" fill="none">
+                      <path d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM12 14a7 7 0 0 0-7 7h14a7 7 0 0 0-7-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 mb-1 font-[Syne,sans-serif]">Submitted By</p>
+                    <p className="text-[15px] font-bold text-[#1a2e4a] mb-2 font-[Syne,sans-serif]">
+                      {selectedExamData.filledBy || 'Unknown'}
+                    </p>
+                    <div className="flex items-center gap-2 text-[11px] text-[#6b85a3] font-[DM_Sans,sans-serif]">
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                        <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                      {selectedExamData.filledAt 
+                        ? new Date(selectedExamData.filledAt).toLocaleString('en-US', {
+                            dateStyle: 'medium',
+                            timeStyle: 'short'
+                          })
+                        : 'Date not available'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Internal Examiners */}
               <div className="mb-6">
                 <h3 className="text-[14px] font-bold text-[#1a2e4a] mb-3 font-[Syne,sans-serif]">🎓 Internal Examiners</h3>
