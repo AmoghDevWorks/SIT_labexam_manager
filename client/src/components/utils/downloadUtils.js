@@ -222,6 +222,244 @@ export const downloadExcel = (subjectsData, subjectCount) => {
   XLSX.writeFile(wb, "Panel_of_Examiners.xlsx");
 };
 
+// ── Excel Export with Unfilled Subjects ──────────────────────────────────────────
+export const downloadExcelWithUnfilled = (subjectsData, subjectCount, unfilledSubjects, semester) => {
+  const errors = validateData(subjectsData, subjectCount);
+  
+  // If there are errors, show alert and stop
+  if (errors.length > 0) {
+    alert(`Please fill all required fields:\n\n${errors.join('\n')}`);
+    return;
+  }
+  
+  const wb = XLSX.utils.book_new();
+  
+  // ═══════════════════════════════════════════════════════════
+  // SHEET 1: Panel of Examiners (Filled Data)
+  // ═══════════════════════════════════════════════════════════
+  const wsData = [];
+
+  // Title row
+  wsData.push([
+    "Panel of Examiners for ODD Semester (2025-2026) - December 2025 - January 2026",
+    "", "", "", "", "", "", "", "", "", ""
+  ]);
+
+  // Subtitle row - "External Examiner" should only appear above the external examiner columns
+  wsData.push([
+    "", "", "", "", "", "",
+    "External Examiner",
+    "", "", "", ""
+  ]);
+
+  // Header row
+  wsData.push([
+    "Sl No",
+    "Subject",
+    "Subject Code",
+    "Semester",
+    "Number of Students",
+    "Internal Examiner",
+    "Name",
+    "Address",
+    "Contact Number",
+    "Email ID",
+    "Permission to use already existing Question Paper with same code (Yes / No)",
+  ]);
+
+  let slNo = 1;
+
+  for (let i = 0; i < subjectCount; i++) {
+    const d = subjectsData[i] || {};
+    const internals = d.internals || [];
+    const externals = d.externals || [];
+
+    const maxRows = Math.max(externals.length, internals.length, 1);
+
+    for (let r = 0; r < maxRows; r++) {
+      const ext = externals[r] || {};
+      const int = internals[r] || {};
+      const isFirstRow = r === 0;
+
+      wsData.push([
+        isFirstRow ? slNo : "",
+        isFirstRow ? (d.subjectName || "") : "",
+        isFirstRow ? (d.subjectCode || "") : "",
+        isFirstRow ? (d.semester ? `Semester ${d.semester}` : "") : "",
+        isFirstRow ? (d.studentsEnrolled || "") : "",
+        int.name || "",
+        ext.name || "",
+        ext.address || "",
+        ext.contact || "",
+        ext.email || "",
+        isFirstRow ? (d.verification || "") : "",
+      ]);
+    }
+
+    slNo++;
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Column widths
+  ws["!cols"] = [
+    { wch: 8 },
+    { wch: 12 },
+    { wch: 14 },
+    { wch: 12 },
+    { wch: 20 },
+    { wch: 28 },
+    { wch: 12 },
+    { wch: 12 },
+    { wch: 18 },
+    { wch: 12 },
+    { wch: 38 },
+  ];
+
+  // Merge cells array
+  const merges = [];
+  
+  // Merge title row across all 11 columns (A1:K1)
+  merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: 10 } });
+  
+  // Merge "External Examiner" subtitle across columns 6-10 (G2:K2) - Name, Address, Contact, Email, Permission
+  merges.push({ s: { r: 1, c: 6 }, e: { r: 1, c: 10 } });
+
+  // Merge cells for each subject (for repeated rows)
+  let currentRow = 3; // Start after headers
+  for (let i = 0; i < subjectCount; i++) {
+    const d = subjectsData[i] || {};
+    const externals = d.externals || [];
+    const internals = d.internals || [];
+    const maxRows = Math.max(externals.length, internals.length, 1);
+
+    if (maxRows > 1) {
+      // Merge Sl. No. (column 0)
+      merges.push({ s: { r: currentRow, c: 0 }, e: { r: currentRow + maxRows - 1, c: 0 } });
+      // Merge Subject (column 1)
+      merges.push({ s: { r: currentRow, c: 1 }, e: { r: currentRow + maxRows - 1, c: 1 } });
+      // Merge Sub Code (column 2)
+      merges.push({ s: { r: currentRow, c: 2 }, e: { r: currentRow + maxRows - 1, c: 2 } });
+      // Merge Semester (column 3)
+      merges.push({ s: { r: currentRow, c: 3 }, e: { r: currentRow + maxRows - 1, c: 3 } });
+      // Merge No. of Students (column 4)
+      merges.push({ s: { r: currentRow, c: 4 }, e: { r: currentRow + maxRows - 1, c: 4 } });
+      // DO NOT merge Internal Examiners (column 5) - each row has its own internal examiner
+    }
+    currentRow += maxRows;
+  }
+
+  ws["!merges"] = merges;
+
+  // Apply center alignment and borders to all cells
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let R = range.s.r; R <= range.e.r; ++R) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+      
+      // Create cell if it doesn't exist
+      if (!ws[cellAddress]) {
+        ws[cellAddress] = { t: 's', v: '' };
+      }
+
+      ws[cellAddress].s = {
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+          wrapText: true
+        },
+        border: {
+          top: { style: "thin", color: { rgb: "000000" } },
+          bottom: { style: "thin", color: { rgb: "000000" } },
+          left: { style: "thin", color: { rgb: "000000" } },
+          right: { style: "thin", color: { rgb: "000000" } }
+        },
+        font: R === 0 || R === 1 ? { bold: true, sz: 12 } : R === 2 ? { bold: true } : {}
+      };
+    }
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, "Panel of Examiners");
+
+  // ═══════════════════════════════════════════════════════════
+  // SHEET 2: Unfilled Subjects
+  // ═══════════════════════════════════════════════════════════
+  if (unfilledSubjects && unfilledSubjects.length > 0) {
+    const unfilledData = [];
+    
+    // Title row
+    unfilledData.push([
+      `Unfilled Subjects - Semester ${semester}`,
+      "", ""
+    ]);
+    
+    // Header row
+    unfilledData.push([
+      "Sl No",
+      "Subject Name",
+      "Subject Code",
+      "Semester"
+    ]);
+    
+    // Data rows
+    unfilledSubjects.forEach((subject, index) => {
+      unfilledData.push([
+        index + 1,
+        subject.subjectName || "",
+        subject.subjectCode || "",
+        subject.semester ? `Semester ${subject.semester}` : ""
+      ]);
+    });
+    
+    const wsUnfilled = XLSX.utils.aoa_to_sheet(unfilledData);
+    
+    // Column widths
+    wsUnfilled["!cols"] = [
+      { wch: 10 },  // Sl No
+      { wch: 40 },  // Subject Name
+      { wch: 18 },  // Subject Code
+      { wch: 15 }   // Semester
+    ];
+    
+    // Merge title row
+    const unfilledMerges = [];
+    unfilledMerges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } });
+    wsUnfilled["!merges"] = unfilledMerges;
+    
+    // Apply styling
+    const unfilledRange = XLSX.utils.decode_range(wsUnfilled['!ref']);
+    for (let R = unfilledRange.s.r; R <= unfilledRange.e.r; ++R) {
+      for (let C = unfilledRange.s.c; C <= unfilledRange.e.c; ++C) {
+        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+        
+        if (!wsUnfilled[cellAddress]) {
+          wsUnfilled[cellAddress] = { t: 's', v: '' };
+        }
+        
+        wsUnfilled[cellAddress].s = {
+          alignment: {
+            horizontal: "center",
+            vertical: "center",
+            wrapText: true
+          },
+          border: {
+            top: { style: "thin", color: { rgb: "000000" } },
+            bottom: { style: "thin", color: { rgb: "000000" } },
+            left: { style: "thin", color: { rgb: "000000" } },
+            right: { style: "thin", color: { rgb: "000000" } }
+          },
+          font: R === 0 ? { bold: true, sz: 12, color: { rgb: "E11D48" } } : R === 1 ? { bold: true } : {},
+          fill: R === 0 ? { fgColor: { rgb: "FEE2E2" } } : R === 1 ? { fgColor: { rgb: "FECACA" } } : {}
+        };
+      }
+    }
+    
+    XLSX.utils.book_append_sheet(wb, wsUnfilled, "Unfilled Subjects");
+  }
+
+  XLSX.writeFile(wb, `Panel_of_Examiners_Semester_${semester}.xlsx`);
+};
+
 // ── PDF Export ──────────────────────────────────────────
 export const downloadPDF = (subjectsData, subjectCount) => {
   try {
