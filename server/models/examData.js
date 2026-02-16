@@ -55,7 +55,16 @@ const examDataSchema = new mongoose.Schema({
     default: 'No'
   },
   internals: [internalExaminerSchema],
-  externals: [externalExaminerSchema]
+  externals: [externalExaminerSchema],
+  // Tracking fields
+  filledBy: {
+    type: String,
+    required: true
+  },
+  filledAt: {
+    type: Date,
+    default: Date.now
+  }
 }, {
   timestamps: true
 });

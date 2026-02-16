@@ -7,7 +7,7 @@ import axios from "axios";
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const Hero = () => {
-  const { userUid } = useUser(); // Get logged-in examiner ID
+  const { userUid, userName } = useUser(); // Get logged-in examiner ID and name
   const [inputVal, setInputVal] = useState("1");
   const subjectCount = Math.max(1, parseInt(inputVal, 10) || 0);
 
@@ -18,6 +18,9 @@ const Hero = () => {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showLockedToast, setShowLockedToast] = useState(false);
+  
+  // Reset counter to force Subject components to remount
+  const [resetCounter, setResetCounter] = useState(0);
 
   const handleChange = (e) => {
     const raw = e.target.value;
@@ -36,7 +39,7 @@ const Hero = () => {
   // Save exam data to backend
   const handleSaveExamData = async () => {
     // Check if user is logged in
-    if (!userUid) {
+    if (!userUid || !userName) {
       alert('❌ Please log in to save exam data');
       return;
     }
@@ -79,7 +82,8 @@ const Hero = () => {
           externals: subject.externals.map(ext => ({
             ...ext,
             yearsOfExperience: parseInt(ext.yearsOfExperience, 10)
-          }))
+          })),
+          filledBy: userName // Add the user who filled the form
         };
         
         return axios.post(`${BACKEND_URL}/api/exam-data`, examDataEntry);
@@ -96,6 +100,9 @@ const Hero = () => {
       // Clear all form data after successful save
       setSubjectsData({});
       setInputVal("1");
+      
+      // Force all Subject components to remount with fresh state
+      setResetCounter(prev => prev + 1);
 
       // Reset success state after 3 seconds
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -165,7 +172,7 @@ const Hero = () => {
         {/* Subjects List */}
         <div className="flex flex-col">
           {Array.from({ length: subjectCount }, (_, i) => (
-            <React.Fragment key={i}>
+            <React.Fragment key={`${i}-${resetCounter}`}>
               <div
                 className="animate-[fadeSlideIn_0.35s_ease_both]"
                 style={{ animationDelay: `${i * 0.06}s` }}
