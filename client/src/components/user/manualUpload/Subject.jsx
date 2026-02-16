@@ -180,8 +180,11 @@ const VerificationRadio = ({ value, onChange, name, disabled }) => (
 /* ─────────────────────────────────────────────
    Count Stepper
 ───────────────────────────────────────────── */
-const CountStepper = ({ label, value, onChange, min = 0, disabled }) => {
+const CountStepper = ({ label, value, onChange, min = 0, max, disabled }) => {
   const num = parseInt(value, 10) || min;
+  const canDecrease = num > min;
+  const canIncrease = max === undefined || num < max;
+  
   return (
     <div className={`flex items-center gap-3 ${disabled ? 'opacity-70' : ''}`}>
       <span className="text-[11px] font-bold tracking-[0.08em] uppercase text-[#6b85a3] font-[Syne,sans-serif] whitespace-nowrap">
@@ -190,29 +193,44 @@ const CountStepper = ({ label, value, onChange, min = 0, disabled }) => {
       <div className="flex items-center border border-[#00c9a7]/25 rounded-xl overflow-hidden bg-sky-50">
         <button
           type="button"
-          onClick={() => !disabled && onChange(String(Math.max(min, num - 1)))}
-          className={`w-8 h-8 flex items-center justify-center text-[#00c9a7] ${disabled ? 'cursor-not-allowed' : 'hover:bg-[#00c9a7]/10'} transition-colors text-lg font-bold`}
-          disabled={disabled}
+          onClick={() => !disabled && canDecrease && onChange(String(num - 1))}
+          className={`w-8 h-8 flex items-center justify-center text-[#00c9a7] ${disabled || !canDecrease ? 'cursor-not-allowed opacity-40' : 'hover:bg-[#00c9a7]/10'} transition-colors text-lg font-bold`}
+          disabled={disabled || !canDecrease}
         >
           −
         </button>
         <input
           type="number"
           min={min}
+          max={max}
           value={value}
           onChange={(e) => {
             const v = e.target.value;
-            if (v === "" || /^\d+$/.test(v)) !disabled && onChange(v);
+            if (v === "" || /^\d+$/.test(v)) {
+              const numVal = parseInt(v, 10);
+              if (!disabled && (v === "" || (numVal >= min && (max === undefined || numVal <= max)))) {
+                onChange(v);
+              }
+            }
           }}
-          onBlur={() => { if (!disabled && (!value || parseInt(value, 10) < min)) onChange(String(min)); }}
+          onBlur={() => {
+            if (!disabled) {
+              let numVal = parseInt(value, 10);
+              if (!value || numVal < min) {
+                onChange(String(min));
+              } else if (max !== undefined && numVal > max) {
+                onChange(String(max));
+              }
+            }
+          }}
           className="w-10 text-center text-sm font-bold text-[#1a2e4a] bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           disabled={disabled}
         />
         <button
           type="button"
-          onClick={() => !disabled && onChange(String(num + 1))}
-          className={`w-8 h-8 flex items-center justify-center text-[#00c9a7] ${disabled ? 'cursor-not-allowed' : 'hover:bg-[#00c9a7]/10'} transition-colors text-lg font-bold`}
-          disabled={disabled}
+          onClick={() => !disabled && canIncrease && onChange(String(num + 1))}
+          className={`w-8 h-8 flex items-center justify-center text-[#00c9a7] ${disabled || !canIncrease ? 'cursor-not-allowed opacity-40' : 'hover:bg-[#00c9a7]/10'} transition-colors text-lg font-bold`}
+          disabled={disabled || !canIncrease}
         >
           +
         </button>
@@ -365,7 +383,8 @@ const Subject = ({ index, onChange }) => {
   const [studentsEnrolled, setStudentsEnrolled] = useState("");
   const [verification, setVerification] = useState("No");
 
-  const [examinerCount, setExaminerCount] = useState("1");
+  const [internalCount, setInternalCount] = useState("1");
+  const [externalCount, setExternalCount] = useState("1");
   const [internals, setInternals] = useState([blankInternal()]);
   const [externals, setExternals] = useState([blankExternal()]);
 
@@ -483,7 +502,7 @@ const Subject = ({ index, onChange }) => {
               name: ie.name || ""
             }));
             setInternals(internalData);
-            setExaminerCount(internalData.length.toString());
+            setInternalCount(internalData.length.toString());
           }
           
           // Set external examiners
@@ -496,6 +515,7 @@ const Subject = ({ index, onChange }) => {
               yearsOfExperience: ee.yearsOfExperience?.toString() || ""
             }));
             setExternals(externalData);
+            setExternalCount(externalData.length.toString());
           }
           
           setExistingData(data);
@@ -519,9 +539,13 @@ const Subject = ({ index, onChange }) => {
     checkExistingData();
   }, [semester, subjectCode]);
 
-  const handleExaminerCount = (val) => {
-    setExaminerCount(val);
+  const handleInternalCount = (val) => {
+    setInternalCount(val);
     setInternals((prev) => syncArray(prev, val, blankInternal));
+  };
+
+  const handleExternalCount = (val) => {
+    setExternalCount(val);
     setExternals((prev) => syncArray(prev, val, blankExternal));
   };
 
@@ -555,7 +579,8 @@ const Subject = ({ index, onChange }) => {
       setSemester("");
       setStudentsEnrolled("");
       setVerification("No");
-      setExaminerCount("1");
+      setInternalCount("1");
+      setExternalCount("1");
       setInternals([blankInternal()]);
       setExternals([blankExternal()]);
       setIsDataLocked(false);
@@ -570,7 +595,8 @@ const Subject = ({ index, onChange }) => {
     if (prevSubjectRef.current && subjectCode && prevSubjectRef.current !== subjectCode) {
       setStudentsEnrolled("");
       setVerification("No");
-      setExaminerCount("1");
+      setInternalCount("1");
+      setExternalCount("1");
       setInternals([blankInternal()]);
       setExternals([blankExternal()]);
     }
@@ -727,9 +753,17 @@ const Subject = ({ index, onChange }) => {
 
           {/* Examiners Count Control */}
           <div className="mb-5">
-            <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
-              <SectionHeading icon="👥" title="Examiners" subtitle="Internal and External examiners (equal count)" />
-              <CountStepper label="Count" value={examinerCount} onChange={handleExaminerCount} min={1} disabled={isDataLocked || !selectedSemester || !subjectCode} />
+            <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
+              <SectionHeading icon="👥" title="Examiners" subtitle="Configure internal and external examiners" />
+              <div className="flex flex-col gap-3">
+                <CountStepper 
+                  label="Internal" 
+                  value={internalCount} 
+                  onChange={handleInternalCount} 
+                  min={1} 
+                  disabled={isDataLocked || !selectedSemester || !subjectCode} 
+                />
+              </div>
             </div>
 
             {/* Internal Examiners */}
@@ -757,6 +791,21 @@ const Subject = ({ index, onChange }) => {
             </div>
 
             {/* External Examiners */}
+            <div className="mb-5">
+              <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
+                <SectionHeading icon="👥" title="Examiners" subtitle="Configure internal and external examiners" />
+                <div className="flex flex-col gap-3">
+                  <CountStepper 
+                    label="External" 
+                    value={externalCount} 
+                    onChange={handleExternalCount} 
+                    min={1} 
+                    max={4}
+                    disabled={isDataLocked || !selectedSemester || !subjectCode} 
+                  />
+                </div>
+              </div>
+            </div>
             <div>
               <h4 className="text-[12px] font-bold text-[#1a2e4a] mb-3 font-[Syne,sans-serif]">🏛️ External Examiners</h4>
               <div className="flex flex-col gap-5">
