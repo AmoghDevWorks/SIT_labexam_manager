@@ -53,13 +53,13 @@ const ManageExamData = () => {
   };
 
   // Check if exam data exists for a subject
-  const getExamDataForSubject = (subjectName) => {
-    return examData.find(ed => ed.subjectName === subjectName);
+  const getExamDataForSubject = (subjectCode) => {
+    return examData.find(ed => ed.subjectCode === subjectCode);
   };
 
   // Open modal with exam data
   const handleViewExamData = (subject) => {
-    const data = getExamDataForSubject(subject.subjectName);
+    const data = getExamDataForSubject(subject.subjectCode);
     if (data) {
       setSelectedExamData(data);
       setShowModal(true);
@@ -375,7 +375,7 @@ const ManageExamData = () => {
           {!loading && selectedSemester && subjects.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {subjects.map((subject) => {
-                const examDataExists = getExamDataForSubject(subject.subjectName);
+                const examDataExists = getExamDataForSubject(subject.subjectCode);
                 
                 return (
                   <div
