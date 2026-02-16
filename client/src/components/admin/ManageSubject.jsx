@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdmin } from "../utils/adminContext";
 import axios from "axios";
+import JSZip from "jszip";
 
 /* ─────────────────────────────────────────────────────────────
    Backend URL from env  →  VITE_BACKEND_URL
@@ -828,11 +829,14 @@ const SubjectCard = ({ subject, index, onEdit, onDelete, onManageExaminers, onCh
 const Toast = ({ toast }) => {
   if (!toast) return null;
   const isError = toast.type === "error";
+  const isInfo = toast.type === "info";
   return (
     <div
       className={`fixed bottom-6 right-6 z-[60] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_8px_32px_rgba(15,31,61,0.2)] font-[DM_Sans,sans-serif] text-sm font-medium transition-all duration-300 ${
         isError
           ? "bg-rose-500 text-white"
+          : isInfo
+          ? "bg-blue-500 text-white"
           : "bg-gradient-to-r from-[#0f1f3d] to-[#162847] text-white border border-[#00c9a7]/20"
       }`}
       style={{ animation: "toastIn 0.3s cubic-bezier(0.34,1.4,0.64,1) both" }}
@@ -840,6 +844,11 @@ const Toast = ({ toast }) => {
       {isError ? (
         <svg viewBox="0 0 16 16" className="w-4 h-4 shrink-0" fill="currentColor">
           <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 3.5a.75.75 0 0 1 .75.75v3a.75.75 0 0 1-1.5 0v-3A.75.75 0 0 1 8 4.5zm0 6.5a.875.875 0 1 1 0-1.75.875.875 0 0 1 0 1.75z"/>
+        </svg>
+      ) : isInfo ? (
+        <svg className="w-4 h-4 shrink-0 animate-spin" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.2" />
+          <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
         </svg>
       ) : (
         <span className="w-5 h-5 rounded-full bg-[#00c9a7]/20 border border-[#00c9a7]/40 flex items-center justify-center shrink-0">
@@ -1020,6 +1029,85 @@ const ManageSubject = () => {
       showToast(err.response?.data?.message || "Failed to delete subject", "error");
     } finally {
       setModalLoading(false);
+    }
+  };
+
+  /* ── DOWNLOAD semester documents as ZIP ── */
+  const handleDownloadSemesterDocuments = async (semester, semesterSubjects) => {
+    if (semesterSubjects.length === 0) {
+      showToast("No subjects found in this semester", "error");
+      return;
+    }
+
+    showToast(`Preparing documents for Semester ${semester}...`, "info");
+
+    try {
+      const zip = new JSZip();
+      const semesterFolder = zip.folder(`semester_${semester}`);
+      let documentCount = 0;
+
+      // Fetch documents for each subject in the semester
+      for (const subject of semesterSubjects) {
+        try {
+          const response = await axios.get(
+            `${BACKEND_URL}/api/documents/check/${subject.semester}/${subject.code}`
+          );
+
+          const { syllabus, modelQP } = response.data;
+          const subjectFolder = semesterFolder.folder(subject.code);
+
+          // Download and add syllabus if available
+          if (syllabus) {
+            try {
+              const syllabusResponse = await axios.get(
+                `${BACKEND_URL}${syllabus.downloadUrl}`,
+                { responseType: 'blob' }
+              );
+              subjectFolder.file(syllabus.filename, syllabusResponse.data);
+              documentCount++;
+            } catch (err) {
+              console.error(`Failed to download syllabus for ${subject.code}:`, err);
+            }
+          }
+
+          // Download and add model QP if available
+          if (modelQP) {
+            try {
+              const modelQPResponse = await axios.get(
+                `${BACKEND_URL}${modelQP.downloadUrl}`,
+                { responseType: 'blob' }
+              );
+              subjectFolder.file(modelQP.filename, modelQPResponse.data);
+              documentCount++;
+            } catch (err) {
+              console.error(`Failed to download model QP for ${subject.code}:`, err);
+            }
+          }
+        } catch (err) {
+          console.error(`Error fetching documents for ${subject.code}:`, err);
+        }
+      }
+
+      if (documentCount === 0) {
+        showToast("No documents found for this semester", "error");
+        return;
+      }
+
+      // Generate and download the ZIP file
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = window.URL.createObjectURL(content);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Semester_${semester}_Documents.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      showToast(`Downloaded ${documentCount} document${documentCount !== 1 ? 's' : ''} for Semester ${semester}`);
+    } catch (err) {
+      console.error('Error creating ZIP file:', err);
+      showToast("Failed to download documents", "error");
     }
   };
 
@@ -1245,6 +1333,17 @@ const ManageSubject = () => {
                             {semesterSubjects.length} {semesterSubjects.length === 1 ? 'Subject' : 'Subjects'}
                           </span>
                         </div>
+                        {semester !== "Unassigned" && semesterSubjects.length > 0 && (
+                          <button
+                            onClick={() => handleDownloadSemesterDocuments(semester, semesterSubjects)}
+                            className="group flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#00c9a7] to-[#00a98c] text-white shadow-[0_2px_10px_rgba(0,201,167,0.25)] hover:shadow-[0_4px_16px_rgba(0,201,167,0.35)] hover:-translate-y-0.5 transition-all duration-200"
+                          >
+                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            <span className="text-[11px] font-bold font-[Syne,sans-serif]">Download Docs</span>
+                          </button>
+                        )}
                         <div className="flex-1 h-px bg-gradient-to-r from-[#00c9a7]/30 to-transparent" />
                       </div>
 
