@@ -651,12 +651,13 @@ export const downloadPDF = (subjectsData, subjectCount, title = 'Panel of Examin
         // Footer section
         const footerY = pageHeight - 20;
         
-        // Signature of BOE (Bottom Left)
+        // Co-ordinator BOE (Bottom Left)
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
         doc.text('___________________', 15, footerY);
         doc.setFontSize(8);
-        doc.text('Signature of BOE', 15, footerY + 4);
+        doc.text('Co-ordinator', 15, footerY + 4);
+        doc.text('BOE', 15, footerY + 8);
         
         // Current Date (Bottom Center)
         const today = new Date();
@@ -665,11 +666,12 @@ export const downloadPDF = (subjectsData, subjectCount, title = 'Panel of Examin
         doc.setFont('helvetica', 'normal');
         doc.text(`Date: ${dateStr}`, pageWidth / 2, footerY + 2, { align: 'center' });
         
-        // Signature of HOD (Bottom Right)
+        // Head of the Department (Bottom Right)
         doc.setFontSize(9);
         doc.text('___________________', pageWidth - 50, footerY);
         doc.setFontSize(8);
-        doc.text('Signature of HOD', pageWidth - 48, footerY + 4);
+        doc.text('Head of the Department', pageWidth - 50, footerY + 4);
+        doc.text('Dept. of CSE', pageWidth - 50, footerY + 8);
         
         // Page number (very bottom)
         const pageCount = doc.internal.getNumberOfPages();
