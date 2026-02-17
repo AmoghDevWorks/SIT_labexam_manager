@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import sitLogo from '../../assets/sit.png';
 
 // ── Validation Helper ──────────────────────────────────────
 export const validateData = (subjectsData, subjectCount) => {
@@ -481,11 +482,62 @@ export const downloadPDF = (subjectsData, subjectCount) => {
     const pageWidth = doc.internal.pageSize.getWidth(); // 297mm
     const pageHeight = doc.internal.pageSize.getHeight(); // 210mm
     
-    // Add title
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    const title = 'Panel of Examiners for ODD Semester (2025-2026) - December 2025 - January 2026';
-    doc.text(title, pageWidth / 2, 12, { align: 'center' });
+    // Header content (will be drawn on each page)
+    const drawHeader = () => {
+      // Header dimensions
+      const headerStartY = 6;
+      const headerHeight = 22;
+      const headerEndY = headerStartY + headerHeight;
+      const leftMargin = 6;
+      const rightMargin = 6;
+      const logoSectionWidth = 28;
+      const dividerX = leftMargin + logoSectionWidth;
+      
+      // Draw outer border for entire header
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.3);
+      doc.rect(leftMargin, headerStartY, pageWidth - leftMargin - rightMargin, headerHeight);
+      
+      // Draw vertical divider between logo and titles
+      doc.setLineWidth(0.3);
+      doc.line(dividerX, headerStartY, dividerX, headerEndY);
+      
+      // Add logo on left side
+      try {
+        // Logo dimensions and position (centered in left section)
+        const logoWidth = 20;
+        const logoHeight = 20;
+        const logoX = leftMargin + (logoSectionWidth - logoWidth) / 2;
+        const logoY = headerStartY + (headerHeight - logoHeight) / 2;
+        
+        // Add the SIT logo
+        doc.addImage(sitLogo, 'PNG', logoX, logoY, logoWidth, logoHeight);
+      } catch (error) {
+        console.log('Logo loading error:', error);
+      }
+      
+      // Calculate center position for text section (right of divider)
+      const textSectionCenterX = dividerX + (pageWidth - rightMargin - dividerX) / 2;
+      
+      // Siddaganga Institute of Technology (centered)
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Siddaganga Institute of Technology', textSectionCenterX, 13, { align: 'center' });
+      
+      // Department of Computer Science and Engineering (centered)
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Department of Computer Science and Engineering', textSectionCenterX, 19, { align: 'center' });
+      
+      // Title (centered)
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      const title = 'Panel of Examiners for ODD Semester (2025-2026) - December 2025 - January 2026';
+      doc.text(title, textSectionCenterX, 25, { align: 'center' });
+    };
+    
+    // Draw header for first page
+    drawHeader();
 
     // Prepare table data with rowSpan information
     const tableData = [];
@@ -537,7 +589,8 @@ export const downloadPDF = (subjectsData, subjectCount) => {
       head: [
         [
           { content: '', colSpan: 6, styles: { halign: 'center', fillColor: [255, 255, 255], textColor: [0, 0, 0], lineWidth: 0.1 } },
-          { content: 'External Examiner', colSpan: 5, styles: { halign: 'center', fillColor: [220, 230, 240], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.1 } }
+          { content: 'External Examiner', colSpan: 4, styles: { halign: 'center', fillColor: [220, 230, 240], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.1 } },
+          { content: '', colSpan: 1, styles: { halign: 'center', fillColor: [255, 255, 255], textColor: [0, 0, 0], lineWidth: 0.1 } }
         ],
         [
           { content: 'Sl No', styles: { halign: 'center' } },
@@ -554,7 +607,7 @@ export const downloadPDF = (subjectsData, subjectCount) => {
         ]
       ],
       body: tableData,
-      startY: 18,
+      startY: 30,
       theme: 'grid',
       styles: {
         fontSize: 6.5,
@@ -587,25 +640,46 @@ export const downloadPDF = (subjectsData, subjectCount) => {
         10: { cellWidth: 23, halign: 'center' },  // Permission - 23mm
       },
       // Total: 10+30+18+12+15+32+32+45+20+38+23 = 275mm (fits in 285mm available)
-      margin: { top: 18, left: 6, right: 6, bottom: 10 },
+      margin: { top: 30, left: 6, right: 6, bottom: 30 },
       didDrawPage: function(data) {
-        // Footer
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'normal');
-        doc.text(
-          'Siddaganga Institute of Technology',
-          data.settings.margin.left,
-          pageHeight - 5
-        );
-        
-        // Page number
-        const pageCount = doc.internal.getNumberOfPages();
         const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
+        
+        // Draw header on every page
+        if (currentPage > 1) {
+          drawHeader();
+        }
+        
+        // Footer section
+        const footerY = pageHeight - 20;
+        
+        // Signature of BOE (Bottom Left)
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text('___________________', 15, footerY);
+        doc.setFontSize(8);
+        doc.text('Signature of BOE', 15, footerY + 4);
+        
+        // Current Date (Bottom Center)
+        const today = new Date();
+        const dateStr = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Date: ${dateStr}`, pageWidth / 2, footerY + 2, { align: 'center' });
+        
+        // Signature of HOD (Bottom Right)
+        doc.setFontSize(9);
+        doc.text('___________________', pageWidth - 50, footerY);
+        doc.setFontSize(8);
+        doc.text('Signature of HOD', pageWidth - 48, footerY + 4);
+        
+        // Page number (very bottom)
+        const pageCount = doc.internal.getNumberOfPages();
+        doc.setFontSize(8);
         doc.text(
           `Page ${currentPage} of ${pageCount}`,
-          pageWidth - 6,
+          pageWidth / 2,
           pageHeight - 5,
-          { align: 'right' }
+          { align: 'center' }
         );
       }
     });
