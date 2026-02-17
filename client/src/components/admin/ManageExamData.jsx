@@ -207,6 +207,7 @@ const ManageExamData = () => {
         subjectCode: editFormData.subjectCode,
         studentsEnrolled: parseInt(editFormData.studentsEnrolled, 10),
         verification: editFormData.verification,
+        existingSubjectCode: editFormData.existingSubjectCode || '',
         internals: editFormData.internals,
         externals: editFormData.externals.map(ext => ({
           ...ext,
@@ -511,6 +512,16 @@ const ManageExamData = () => {
                 </div>
               </div>
 
+              {/* Existing Subject Code - Show when verification is Yes */}
+              {selectedExamData.verification === 'Yes' && selectedExamData.existingSubjectCode && (
+                <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-blue-700 mb-1 font-[Syne,sans-serif]">Existing Subject Code</p>
+                  <p className="text-[16px] font-bold text-blue-900 font-[Syne,sans-serif]">
+                    {selectedExamData.existingSubjectCode}
+                  </p>
+                </div>
+              )}
+
               {/* Tracking Information */}
               <div className="mb-6 bg-gradient-to-r from-emerald-50 to-sky-50 border border-emerald-200 rounded-xl p-4">
                 <div className="flex items-start gap-3">
@@ -705,6 +716,22 @@ const ManageExamData = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Existing Subject Code Field - Shows when verification is Yes */}
+              {editFormData.verification === 'Yes' && (
+                <div className="mb-6">
+                  <label className="block text-[11px] font-bold tracking-[0.1em] uppercase text-[#6b85a3] mb-2 font-[Syne,sans-serif]">
+                    Existing Subject Code
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.existingSubjectCode || ''}
+                    onChange={(e) => updateEditField('existingSubjectCode', e.target.value.toUpperCase())}
+                    placeholder="e.g. 18CSL66 (Previous year subject code)"
+                    className="w-full px-4 py-2.5 text-sm text-[#1a2e4a] bg-sky-50 border border-[#00c9a7]/25 rounded-xl outline-none focus:border-[#00c9a7] focus:shadow-[0_0_0_3px_rgba(0,201,167,0.12)] font-[DM_Sans,sans-serif]"
+                  />
+                </div>
+              )}
 
               {/* Internal Examiners */}
               <div className="mb-6">

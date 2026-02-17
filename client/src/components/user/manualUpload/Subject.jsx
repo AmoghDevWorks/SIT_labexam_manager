@@ -382,6 +382,7 @@ const Subject = ({ index, onChange }) => {
   const [semester, setSemester] = useState("");
   const [studentsEnrolled, setStudentsEnrolled] = useState("");
   const [verification, setVerification] = useState("No");
+  const [existingSubjectCode, setExistingSubjectCode] = useState("");
 
   const [internalCount, setInternalCount] = useState("1");
   const [externalCount, setExternalCount] = useState("1");
@@ -495,6 +496,7 @@ const Subject = ({ index, onChange }) => {
           // Populate form with existing data
           setStudentsEnrolled(data.studentsEnrolled?.toString() || "");
           setVerification(data.verification || "No");
+          setExistingSubjectCode(data.existingSubjectCode || "");
           
           // Set internal examiners
           if (data.internals && data.internals.length > 0) {
@@ -579,6 +581,7 @@ const Subject = ({ index, onChange }) => {
       setSemester("");
       setStudentsEnrolled("");
       setVerification("No");
+      setExistingSubjectCode("");
       setInternalCount("1");
       setExternalCount("1");
       setInternals([blankInternal()]);
@@ -595,6 +598,7 @@ const Subject = ({ index, onChange }) => {
     if (prevSubjectRef.current && subjectCode && prevSubjectRef.current !== subjectCode) {
       setStudentsEnrolled("");
       setVerification("No");
+      setExistingSubjectCode("");
       setInternalCount("1");
       setExternalCount("1");
       setInternals([blankInternal()]);
@@ -606,9 +610,9 @@ const Subject = ({ index, onChange }) => {
   // Lift state up to App whenever anything changes
   useEffect(() => {
     if (onChange) {
-      onChange(index, { subjectName, subjectCode, semester, studentsEnrolled, verification, internals, externals, isDataLocked });
+      onChange(index, { subjectName, subjectCode, semester, studentsEnrolled, verification, existingSubjectCode, internals, externals, isDataLocked });
     }
-  }, [subjectName, subjectCode, semester, studentsEnrolled, verification, internals, externals, isDataLocked]);
+  }, [subjectName, subjectCode, semester, studentsEnrolled, verification, existingSubjectCode, internals, externals, isDataLocked]);
 
   const semesterLabels = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
 
@@ -827,6 +831,32 @@ const Subject = ({ index, onChange }) => {
               disabled={isDataLocked || !selectedSemester || !subjectCode}
             />
           </div>
+
+          {/* Existing Subject Code Field - Shows when verification is Yes */}
+          {verification === "Yes" && (
+            <div className="mb-5 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 shadow-[0_4px_16px_rgba(59,130,246,0.15)]">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm shadow-[0_4px_10px_rgba(59,130,246,0.3)] shrink-0">
+                  📝
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-[12px] font-bold text-blue-900 font-[Syne,sans-serif] mb-1">
+                    Enter the Subject Code of the Existing Subject
+                  </h4>
+                  <p className="text-[10px] text-blue-700 font-[DM_Sans,sans-serif]">
+                    Since you selected "Yes" for using existing question paper, please provide the subject code from the previous year.
+                  </p>
+                </div>
+              </div>
+              <Input
+                placeholder="e.g. 18CSL66 (Previous year subject code)"
+                value={existingSubjectCode}
+                onChange={(e) => setExistingSubjectCode(e.target.value.toUpperCase())}
+                disabled={isDataLocked || !selectedSemester || !subjectCode}
+                className="bg-white"
+              />
+            </div>
+          )}
 
         </div>
       </div>

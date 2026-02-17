@@ -54,6 +54,10 @@ const examDataSchema = new mongoose.Schema({
     enum: ['Yes', 'No'],
     default: 'No'
   },
+  existingSubjectCode: {
+    type: String,
+    default: ''
+  },
   internals: [internalExaminerSchema],
   externals: [externalExaminerSchema],
   // Tracking fields

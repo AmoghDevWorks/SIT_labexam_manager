@@ -3,7 +3,7 @@ const ExamData = require('../models/examData');
 // Create new exam data
 const createExamData = async (req, res) => {
   try {
-    const { semester, subjectName, subjectCode, studentsEnrolled, verification, internals, externals, filledBy } = req.body;
+    const { semester, subjectName, subjectCode, studentsEnrolled, verification, existingSubjectCode, internals, externals, filledBy } = req.body;
 
     // Validate required fields
     if (!semester) {
@@ -28,6 +28,7 @@ const createExamData = async (req, res) => {
       subjectCode,
       studentsEnrolled,
       verification: verification || 'No',
+      existingSubjectCode: existingSubjectCode || '',
       internals: internals || [],
       externals: externals || [],
       filledBy,
@@ -96,7 +97,7 @@ const getExamDataBySemesterAndSubject = async (req, res) => {
 // Update exam data
 const updateExamData = async (req, res) => {
   try {
-    const { semester, subjectName, subjectCode, studentsEnrolled, verification, internals, externals, filledBy } = req.body;
+    const { semester, subjectName, subjectCode, studentsEnrolled, verification, existingSubjectCode, internals, externals, filledBy } = req.body;
 
     const examData = await ExamData.findById(req.params.id);
     
@@ -109,6 +110,7 @@ const updateExamData = async (req, res) => {
     if (subjectCode) examData.subjectCode = subjectCode;
     if (studentsEnrolled) examData.studentsEnrolled = studentsEnrolled;
     if (verification) examData.verification = verification;
+    if (existingSubjectCode !== undefined) examData.existingSubjectCode = existingSubjectCode;
     if (internals) examData.internals = internals;
     if (externals) examData.externals = externals;
     if (filledBy) examData.filledBy = filledBy;

@@ -78,6 +78,7 @@ const Hero = () => {
           subjectCode: subject.subjectCode,
           studentsEnrolled: parseInt(subject.studentsEnrolled, 10),
           verification: subject.verification,
+          existingSubjectCode: subject.existingSubjectCode || '',
           internals: subject.internals,
           externals: subject.externals.map(ext => ({
             ...ext,
