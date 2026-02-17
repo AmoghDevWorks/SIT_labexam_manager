@@ -67,7 +67,7 @@ export const validateData = (subjectsData, subjectCount) => {
 };
 
 // ── Excel Export ──────────────────────────────────────────
-export const downloadExcel = (subjectsData, subjectCount) => {
+export const downloadExcel = (subjectsData, subjectCount, title = 'Panel of Examiners for ODD Semester (2025-2026) - December 2025 - January 2026') => {
   const errors = validateData(subjectsData, subjectCount);
   
   // If there are errors, show alert and stop
@@ -81,7 +81,7 @@ export const downloadExcel = (subjectsData, subjectCount) => {
 
   // Title row
   wsData.push([
-    "Panel of Examiners for ODD Semester (2025-2026) - December 2025 - January 2026",
+    title,
     "", "", "", "", "", "", "", "", "", ""
   ]);
 
@@ -224,7 +224,7 @@ export const downloadExcel = (subjectsData, subjectCount) => {
 };
 
 // ── Excel Export with Unfilled Subjects ──────────────────────────────────────────
-export const downloadExcelWithUnfilled = (subjectsData, subjectCount, unfilledSubjects, semester) => {
+export const downloadExcelWithUnfilled = (subjectsData, subjectCount, unfilledSubjects, semester, title = 'Panel of Examiners for ODD Semester (2025-2026) - December 2025 - January 2026') => {
   const errors = validateData(subjectsData, subjectCount);
   
   // If there are errors, show alert and stop
@@ -242,7 +242,7 @@ export const downloadExcelWithUnfilled = (subjectsData, subjectCount, unfilledSu
 
   // Title row
   wsData.push([
-    "Panel of Examiners for ODD Semester (2025-2026) - December 2025 - January 2026",
+    title,
     "", "", "", "", "", "", "", "", "", ""
   ]);
 
@@ -462,7 +462,7 @@ export const downloadExcelWithUnfilled = (subjectsData, subjectCount, unfilledSu
 };
 
 // ── PDF Export ──────────────────────────────────────────
-export const downloadPDF = (subjectsData, subjectCount) => {
+export const downloadPDF = (subjectsData, subjectCount, title = 'Panel of Examiners for ODD Semester (2025-2026) - December 2025 - January 2026') => {
   try {
     const errors = validateData(subjectsData, subjectCount);
     
@@ -532,7 +532,6 @@ export const downloadPDF = (subjectsData, subjectCount) => {
       // Title (centered)
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      const title = 'Panel of Examiners for ODD Semester (2025-2026) - December 2025 - January 2026';
       doc.text(title, textSectionCenterX, 25, { align: 'center' });
     };
     

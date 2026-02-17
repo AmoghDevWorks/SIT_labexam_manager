@@ -19,6 +19,7 @@ const ManageExamData = () => {
   const [showBulkDownloadModal, setShowBulkDownloadModal] = useState(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [documentTitle, setDocumentTitle] = useState('Panel of Examiners for ODD Semester (2025-2026) - December 2025 - January 2026');
 
   const semesterLabels = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
 
@@ -83,7 +84,7 @@ const ManageExamData = () => {
       }
     };
 
-    downloadExcel(subjectsData, 1);
+    downloadExcel(subjectsData, 1, documentTitle);
   };
 
   // Download PDF for single subject
@@ -103,7 +104,7 @@ const ManageExamData = () => {
       }
     };
 
-    downloadPDF(subjectsData, 1);
+    downloadPDF(subjectsData, 1, documentTitle);
   };
 
   // Download Excel for all subjects in semester
@@ -131,7 +132,7 @@ const ManageExamData = () => {
     const filledSubjectCodes = new Set(examData.map(ed => ed.subjectCode));
     const unfilledSubjects = subjects.filter(subject => !filledSubjectCodes.has(subject.subjectCode));
 
-    downloadExcelWithUnfilled(subjectsData, examData.length, unfilledSubjects, selectedSemester);
+    downloadExcelWithUnfilled(subjectsData, examData.length, unfilledSubjects, selectedSemester, documentTitle);
     setShowBulkDownloadModal(false);
   };
 
@@ -156,7 +157,7 @@ const ManageExamData = () => {
       };
     });
 
-    downloadPDF(subjectsData, examData.length);
+    downloadPDF(subjectsData, examData.length, documentTitle);
     setShowBulkDownloadModal(false);
   };
 
@@ -860,6 +861,23 @@ const ManageExamData = () => {
 
             {/* Modal Content */}
             <div className="p-8">
+              {/* Title Input */}
+              <div className="mb-6">
+                <label className="block text-[11px] font-bold tracking-[0.1em] uppercase text-[#6b85a3] mb-2 font-[Syne,sans-serif]">
+                  Document Title <span className="text-[#00c9a7]">*</span>
+                </label>
+                <textarea
+                  value={documentTitle}
+                  onChange={(e) => setDocumentTitle(e.target.value)}
+                  rows="2"
+                  className="w-full px-4 py-3 text-sm text-[#1a2e4a] bg-sky-50 border border-[#00c9a7]/25 rounded-xl outline-none transition-all duration-200 focus:border-[#00c9a7] focus:shadow-[0_0_0_3px_rgba(0,201,167,0.12)] font-[DM_Sans,sans-serif] resize-none"
+                  placeholder="Enter the document title..."
+                />
+                <p className="text-xs text-[#6b85a3] mt-1.5 font-[DM_Sans,sans-serif]">
+                  This title will appear at the top of the generated document
+                </p>
+              </div>
+
               <p className="text-[#6b85a3] text-sm mb-6 font-[DM_Sans,sans-serif]">
                 Choose a format to download all exam data for Semester {selectedSemester}:
               </p>
