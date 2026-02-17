@@ -63,9 +63,7 @@ After logging in, you have access to:
 2. Click **"Add New Examiner"**
 3. Fill in:
    - Full Name
-   - Department
-   - Email (optional)
-   - Phone (optional)
+   - Password
 4. Click **"Save"**
 
 ### Remove Examiner
@@ -77,28 +75,13 @@ After logging in, you have access to:
 
 ## 📊 3. Manage Subject Entry
 
-View who has been assigned which subjects:
-
-1. Click **"Manage Subject Entry"**
-2. Select **Semester**
-3. View table showing:
-   - Subject Name
-   - Subject Code
-   - Assigned To (username)
-   - Status (Completed/Pending)
-   - Submission Date
-
-### Reassign Subject
-
-1. Find the subject
-2. Click **"Reassign"** button
-3. Subject becomes available for other users
+1. Provides a toggle
+    - If **ON**, allows user to register and unregister
+    - If **OFF**, user is restricted to register the subjects
 
 ---
 
 ## 💼 4. Manage Exam Data
-
-This is the most powerful admin feature.
 
 ### View Data
 
@@ -151,91 +134,3 @@ In subject details popup:
 4. **WARNING:** This cannot be undone!
 
 ---
-
-## 🎯 Quick Workflows
-
-### Scenario 1: HOD Needs Semester Report
-
-```
-1. Login as Admin
-2. Manage Exam Data → Select Semester
-3. Download Sem Exam Data
-4. Edit title (e.g., "Panel of Examiners for 6th Semester - Jan 2026")
-5. Download as PDF or Excel
-6. Email to HOD
-```
-
-### Scenario 2: Fix Wrong Data
-
-```
-1. Login as Admin
-2. Manage Exam Data → Select Semester
-3. Find subject → Click card
-4. Click Edit
-5. Correct the wrong information
-6. Save Changes
-```
-
-### Scenario 3: Add New Semester Subjects
-
-```
-1. Login as Admin
-2. Manage Subjects
-3. For each subject:
-   - Click Add New Subject
-   - Fill: Name, Code, Semester
-   - Save
-```
-
----
-
-## 🔧 Common Admin Tasks
-
-### Q: How do I reset a user's assignment?
-
-A: Go to Manage Subject Entry → Find subject → Click "Reassign"
-
-### Q: How do I export all data for backup?
-
-A: For each semester, use bulk download in Manage Exam Data
-
-### Q: Can I edit a user's submitted data?
-
-A: Yes. Use "Edit" button in Manage Exam Data
-
-### Q: How do I delete incorrect subjects?
-
-A: Manage Subjects → Click Delete (warning: removes all related data)
-
-### Q: What if bulk download doesn't include all subjects?
-
-A: Only "Filled" subjects appear in download. Check for unfilled subjects in Sheet 2 (Excel)
-
----
-
-## ⚠️ Important Notes
-
-**DO:**
-- Always download backups before deleting data
-- Verify edited data after saving
-- Use descriptive titles when downloading reports
-- Check unfilled subjects regularly
-
-**DON'T:**
-- Delete subjects without checking dependencies
-- Clear semester data without confirmation
-- Share admin credentials
-- Edit data without verifying the source
-
----
-
-## 📞 Support
-
-**For Admin Issues:**
-- Contact: IT Department
-- Email: support@sit.ac.in
-- Phone: 0816-xxxx-xxxx
-
----
-
-**Last Updated:** February 2026

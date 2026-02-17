@@ -531,16 +531,3 @@ npx kill-port 5000
 - Code reviews: Before merging
 
 ---
-
-## 📞 Support
-
-**For Development Issues:**
-- Check `server/RouterGuide.md` for API documentation
-- Review console logs for errors
-- Check MongoDB logs
-- Contact: development@sit.ac.in
-
----
-
-**Last Updated:** February 2026  
-**Maintainer:** SIT IT Department
