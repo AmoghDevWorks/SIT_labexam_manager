@@ -36,7 +36,7 @@ const Home = () => {
         {/* Header Section */}
         <div className="text-center mb-12 md:mb-16">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 text-[#0f1f3d]" style={{ fontFamily: 'Syne, sans-serif' }}>
-            Lab Exam Manager
+            Panel of Examiners
           </h1>
           <p className="text-gray-600 text-lg md:text-xl max-w-2xl mx-auto" style={{ fontFamily: 'DM Sans, sans-serif' }}>
             Welcome! Please select your login type to continue
