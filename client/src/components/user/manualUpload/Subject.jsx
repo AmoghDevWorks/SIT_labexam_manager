@@ -853,7 +853,7 @@ const Subject = ({ index, onChange }) => {
                 value={existingSubjectCode}
                 onChange={(e) => setExistingSubjectCode(e.target.value.toUpperCase())}
                 disabled={isDataLocked || !selectedSemester || !subjectCode}
-                className="bg-white"
+                className="w-full px-3 py-1.5 text-sm text-[#1a2e4a] bg-sky-50 border border-[#00c9a7]/20 rounded-lg outline-none focus:border-[#00c9a7] placeholder:text-[#6b85a3]/50"
               />
             </div>
           )}
