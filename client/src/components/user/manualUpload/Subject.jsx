@@ -134,7 +134,7 @@ const VerificationRadio = ({ value, onChange, name, disabled }) => (
   <div className={`bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl p-4 shadow-[0_4px_16px_rgba(251,146,60,0.15)] ${disabled ? 'opacity-70' : ''}`}>
     <div className="flex items-center gap-2 flex-wrap">
       <span className="text-[12px] font-bold tracking-[0.08em] uppercase text-amber-900 font-[Syne,sans-serif]">
-        Permission to use already existing Question Paper with same code (Yes / No) <span className="text-rose-500">*</span>
+        Permission to use already existing Question Paper with same code (Yes / No) <br></br> [Enter "YES" if the Subject Code of current year is same as previous year's] <span className="text-rose-500">*</span>
       </span>
       <div className="flex gap-2">
         {["Yes", "No"].map((opt) => {
