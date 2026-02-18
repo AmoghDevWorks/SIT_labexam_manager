@@ -123,6 +123,7 @@ const UploadDocs = () => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("subjectCode", subject?.subjectCode);
+    formData.append("subjectName", subject?.subjectName);
     formData.append("semester", selectedSemester);
     formData.append("documentType", type);
 
@@ -254,6 +255,9 @@ const UploadDocs = () => {
                 status={uploadStatus.syllabus}
                 inputId="syllabus-input"
                 acceptedFormats=".pdf,.doc,.docx"
+                semester={selectedSemester}
+                subjectCode={subjects.find(s => s._id === selectedSubject)?.subjectCode}
+                documentType="syllabus"
               />
 
               {/* Model QP Upload Card */}
@@ -268,6 +272,9 @@ const UploadDocs = () => {
                 status={uploadStatus.modelQP}
                 inputId="modelQP-input"
                 acceptedFormats=".pdf,.doc,.docx"
+                semester={selectedSemester}
+                subjectCode={subjects.find(s => s._id === selectedSubject)?.subjectCode}
+                documentType="modelQP"
               />
             </div>
           )}
@@ -344,8 +351,44 @@ const UploadDocs = () => {
 };
 
 /* Upload Card Component */
-const UploadCard = ({ title, icon, file, existingFile, onFileChange, onUpload, uploading, status, inputId, acceptedFormats }) => {
+const UploadCard = ({ title, icon, file, existingFile, onFileChange, onUpload, uploading, status, inputId, acceptedFormats, semester, subjectCode, documentType }) => {
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+  
+  const handleDownload = async () => {
+    try {
+      const response = await axios.get(
+        `${BACKEND_URL}/api/documents/${semester}/${subjectCode}/${documentType}`,
+        {
+          responseType: 'blob',
+        }
+      );
+      
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Extract filename from content-disposition or use existing filename
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = existingFile?.filename || `document_${documentType}.pdf`;
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      alert('Failed to download document. Please try again.');
+    }
+  };
   
   const formatFileSize = (bytes) => {
     if (bytes < 1024) return bytes + ' B';
@@ -391,17 +434,15 @@ const UploadCard = ({ title, icon, file, existingFile, onFileChange, onUpload, u
                   </p>
                 </div>
               </div>
-              <a
-                href={`${BACKEND_URL}${existingFile.downloadUrl}`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={handleDownload}
                 className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold text-emerald-700 bg-white border border-emerald-300 rounded-lg hover:bg-emerald-50 transition-colors font-[Syne,sans-serif] shrink-0"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
                 Download
-              </a>
+              </button>
             </div>
             <p className="text-[10px] text-emerald-700 italic font-[DM_Sans,sans-serif]">
               Upload a new file to replace this one

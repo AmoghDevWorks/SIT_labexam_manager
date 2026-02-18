@@ -55,12 +55,12 @@ exports.uploadDocument = (req, res) => {
       return res.status(400).json({ message: "No file uploaded" });
     }
 
-    const { semester, subjectCode, documentType } = req.body;
+    const { semester, subjectCode, subjectName, documentType } = req.body;
 
-    if (!semester || !subjectCode || !documentType) {
+    if (!semester || !subjectCode || !subjectName || !documentType) {
       // Delete temp file if validation fails
       fs.unlinkSync(req.file.path);
-      return res.status(400).json({ message: "Missing required fields: semester, subjectCode, or documentType" });
+      return res.status(400).json({ message: "Missing required fields: semester, subjectCode, subjectName, or documentType" });
     }
 
     // Create final directory structure: uploads/semester_X/subjectCode/
@@ -70,9 +70,11 @@ exports.uploadDocument = (req, res) => {
       fs.mkdirSync(finalDir, { recursive: true });
     }
 
-    // Create final filename: subjectCode_documentType.extension
+    // Create final filename: subjectCode-subjectName_documentType.extension
     const extension = path.extname(req.file.originalname);
-    const finalFilename = `${subjectCode}_${documentType}${extension}`;
+    // Remove spaces and special characters from subject name for filename
+    const sanitizedSubjectName = subjectName.replace(/[^a-zA-Z0-9]/g, '');
+    const finalFilename = `${subjectCode}-${sanitizedSubjectName}_${documentType}${extension}`;
     const finalPath = path.join(finalDir, finalFilename);
 
     // Move file from temp to final location (this overwrites if exists)
@@ -94,6 +96,7 @@ exports.uploadDocument = (req, res) => {
               size: req.file.size,
               semester,
               subjectCode,
+              subjectName,
               documentType
             }
           });
@@ -108,6 +111,7 @@ exports.uploadDocument = (req, res) => {
             size: req.file.size,
             semester,
             subjectCode,
+            subjectName,
             documentType
           }
         });
@@ -128,7 +132,8 @@ exports.getDocument = (req, res) => {
       return res.status(404).json({ message: "Document not found" });
     }
 
-    const file = files.find(f => f.startsWith(`${subjectCode}_${documentType}`));
+    // Match pattern: subjectCode-subjectName_documentType
+    const file = files.find(f => f.startsWith(`${subjectCode}-`) && f.includes(`_${documentType}`));
     
     if (!file) {
       return res.status(404).json({ message: "Document not found" });
@@ -189,8 +194,9 @@ exports.checkDocuments = (req, res) => {
       });
     }
 
-    const syllabusFile = files.find(f => f.startsWith(`${subjectCode}_syllabus`));
-    const modelQPFile = files.find(f => f.startsWith(`${subjectCode}_modelQP`));
+    // Match pattern: subjectCode-subjectName_documentType
+    const syllabusFile = files.find(f => f.startsWith(`${subjectCode}-`) && f.includes('_syllabus'));
+    const modelQPFile = files.find(f => f.startsWith(`${subjectCode}-`) && f.includes('_modelQP'));
 
     // Get file stats for size and date
     const getFileInfo = (filename) => {

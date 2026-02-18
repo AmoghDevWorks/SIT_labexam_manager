@@ -499,6 +499,8 @@ const CheckDocumentsModal = ({ subject, onClose }) => {
         setDocuments(response.data);
       } catch (error) {
         console.error("Error fetching documents:", error);
+        // Set empty state on error
+        setDocuments({ syllabus: null, modelQP: null });
       } finally {
         setLoading(false);
       }
@@ -522,7 +524,44 @@ const CheckDocumentsModal = ({ subject, onClose }) => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
-  const DocumentCard = ({ title, icon, document }) => (
+  const handleDownload = async (documentType) => {
+    try {
+      const response = await axios.get(
+        `${BACKEND_URL}/api/documents/${subject.semester}/${subject.code}/${documentType}`,
+        {
+          responseType: 'blob', // Important for file downloads
+        }
+      );
+      
+      // Create a blob URL and trigger download
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Extract filename from content-disposition header or use default
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `${subject.code}-${subject.name}_${documentType}.pdf`;
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      alert('Failed to download document. Please try again.');
+    }
+  };
+
+  const DocumentCard = ({ title, icon, document, documentType }) => (
     <div className="bg-gradient-to-br from-sky-50 to-emerald-50/40 border border-[#00c9a7]/20 rounded-xl p-4">
       <div className="flex items-center gap-2.5 mb-3">
         <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#00c9a7] to-[#00a98c] flex items-center justify-center text-white text-lg shadow-[0_4px_10px_rgba(0,201,167,0.25)] shrink-0">
@@ -547,17 +586,15 @@ const CheckDocumentsModal = ({ subject, onClose }) => {
                 </p>
               </div>
             </div>
-            <a
-              href={`${BACKEND_URL}${document.downloadUrl}`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => handleDownload(documentType)}
               className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold text-emerald-700 bg-white border border-emerald-300 rounded-lg hover:bg-emerald-50 transition-colors font-[Syne,sans-serif] shrink-0"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
               Download
-            </a>
+            </button>
           </div>
         </div>
       ) : (
@@ -624,8 +661,8 @@ const CheckDocumentsModal = ({ subject, onClose }) => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <DocumentCard title="Syllabus" icon="📄" document={documents.syllabus} />
-              <DocumentCard title="Model Question Paper" icon="📝" document={documents.modelQP} />
+              <DocumentCard title="Syllabus" icon="📄" document={documents.syllabus} documentType="syllabus" />
+              <DocumentCard title="Model Question Paper" icon="📝" document={documents.modelQP} documentType="modelQP" />
             </div>
           )}
         </div>
