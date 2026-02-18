@@ -123,6 +123,7 @@ const ManageExamData = () => {
         semester: data.semester,
         studentsEnrolled: data.studentsEnrolled.toString(),
         verification: data.verification,
+        existingSubjectCode: data.existingSubjectCode || "",
         internals: data.internals,
         externals: data.externals
       };
@@ -152,6 +153,7 @@ const ManageExamData = () => {
         semester: data.semester,
         studentsEnrolled: data.studentsEnrolled.toString(),
         verification: data.verification,
+        existingSubjectCode: data.existingSubjectCode || "",
         internals: data.internals,
         externals: data.externals
       };

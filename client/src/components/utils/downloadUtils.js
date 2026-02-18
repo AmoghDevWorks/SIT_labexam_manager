@@ -458,6 +458,108 @@ export const downloadExcelWithUnfilled = (subjectsData, subjectCount, unfilledSu
     XLSX.utils.book_append_sheet(wb, wsUnfilled, "Unfilled Subjects");
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // SHEET 3: Verified Subjects (subjects with verification="Yes")
+  // ═══════════════════════════════════════════════════════════
+  // Filter subjects where verification is "Yes"
+  const verifiedSubjects = [];
+  for (let i = 0; i < subjectCount; i++) {
+    const d = subjectsData[i] || {};
+    if (d.verification && d.verification.toLowerCase() === 'yes') {
+      verifiedSubjects.push(d);
+    }
+  }
+
+  if (verifiedSubjects.length > 0) {
+    const verifiedData = [];
+    
+    // Title row
+    verifiedData.push([
+      `Verified Subjects - Semester ${semester}`,
+      "", "", ""
+    ]);
+    
+    // Header row
+    verifiedData.push([
+      "Sl No",
+      "Subject Code",
+      "Subject Name",
+      "Existing Subject Code (Previous Year)"
+    ]);
+    
+    // Data rows
+    verifiedSubjects.forEach((subject, index) => {
+      verifiedData.push([
+        index + 1,
+        subject.subjectCode || "",
+        subject.subjectName || "",
+        subject.existingSubjectCode && subject.existingSubjectCode.trim() !== "" 
+          ? subject.existingSubjectCode 
+          : "Not Provided"
+      ]);
+    });
+    
+    const wsVerified = XLSX.utils.aoa_to_sheet(verifiedData);
+    
+    // Column widths
+    wsVerified["!cols"] = [
+      { wch: 10 },  // Sl No
+      { wch: 18 },  // Subject Code
+      { wch: 40 },  // Subject Name
+      { wch: 35 }   // Existing Subject Code
+    ];
+    
+    // Merge title row
+    const verifiedMerges = [];
+    verifiedMerges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } });
+    wsVerified["!merges"] = verifiedMerges;
+    
+    // Apply styling
+    const verifiedRange = XLSX.utils.decode_range(wsVerified['!ref']);
+    for (let R = verifiedRange.s.r; R <= verifiedRange.e.r; ++R) {
+      for (let C = verifiedRange.s.c; C <= verifiedRange.e.c; ++C) {
+        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+        
+        if (!wsVerified[cellAddress]) {
+          wsVerified[cellAddress] = { t: 's', v: '' };
+        }
+        
+        // Check if this is a "Not Provided" cell (only in column 3, row > 1)
+        const isNotProvided = R > 1 && C === 3 && wsVerified[cellAddress].v === "Not Provided";
+        
+        wsVerified[cellAddress].s = {
+          alignment: {
+            horizontal: "center",
+            vertical: "center",
+            wrapText: true
+          },
+          border: {
+            top: { style: "thin", color: { rgb: "000000" } },
+            bottom: { style: "thin", color: { rgb: "000000" } },
+            left: { style: "thin", color: { rgb: "000000" } },
+            right: { style: "thin", color: { rgb: "000000" } }
+          },
+          font: R === 0 
+            ? { bold: true, sz: 12, color: { rgb: "1E40AF" } } 
+            : R === 1 
+              ? { bold: true } 
+              : isNotProvided 
+                ? { italic: true, color: { rgb: "DC2626" } } 
+                : {},
+          fill: R === 0 
+            ? { fgColor: { rgb: "DBEAFE" } } 
+            : R === 1 
+              ? { fgColor: { rgb: "BFDBFE" } } 
+              : isNotProvided 
+                ? { fgColor: { rgb: "FEE2E2" } } 
+                : {}
+        };
+      }
+    }
+    
+    XLSX.utils.book_append_sheet(wb, wsVerified, "Verified Subjects");
+  }
+
   XLSX.writeFile(wb, `Panel_of_Examiners_Semester_${semester}.xlsx`);
 };
 
