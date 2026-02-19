@@ -253,12 +253,10 @@ const InternalExaminerCard = ({ index, data, onChange, subjectId, internalExamin
       </div>
       <div className="mt-2">
         <Label required>Name</Label>
-        <SearchableDropdown
-          options={internalExaminers}
+        <Input
+          placeholder="Enter internal examiner name..."
           value={data.name}
-          onChange={field("name")}
-          placeholder="Select or search examiner..."
-          label="examiners"
+          onChange={(e) => field("name")(e.target.value)}
           required
           disabled={disabled}
         />
