@@ -19,6 +19,7 @@ const Hero = ({ setActiveTab }) => {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showLockedToast, setShowLockedToast] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   
   // Reset counter to force Subject components to remount
   const [resetCounter, setResetCounter] = useState(0);
@@ -39,8 +40,8 @@ const Hero = ({ setActiveTab }) => {
     setSubjectsData((prev) => ({ ...prev, [index]: data }));
   }, []);
 
-  // Save exam data to backend
-  const handleSaveExamData = async () => {
+  // Open confirmation modal
+  const handleSaveExamData = () => {
     // Check if user is logged in
     if (!userUid || !userName) {
       alert('❌ Please log in to save exam data');
@@ -66,11 +67,37 @@ const Hero = ({ setActiveTab }) => {
       return;
     }
 
+    // Validate external examiner experience (minimum 3 years)
+    const subjectsArray = Object.values(subjectsData).slice(0, subjectCount);
+    const experienceErrors = [];
+    
+    subjectsArray.forEach((subject, idx) => {
+      subject.externals.forEach((ext, extIdx) => {
+        const years = parseInt(ext.yearsOfExperience, 10);
+        if (isNaN(years) || years < 3) {
+          experienceErrors.push(`Subject #${idx + 1} - External Examiner #${extIdx + 1}: Minimum 3 years of experience required (currently: ${ext.yearsOfExperience || 'not filled'})`);
+        }
+      });
+    });
+
+    if (experienceErrors.length > 0) {
+      alert(`⚠️ External Examiner Experience Requirements Not Met:\n\n${experienceErrors.join('\n')}\n\nPlease ensure all external examiners have at least 3 years of experience.`);
+      return;
+    }
+
+    // Show confirmation modal
+    setShowConfirmModal(true);
+  };
+
+  // Actual save operation after confirmation
+  const confirmSaveExamData = async () => {
+    setShowConfirmModal(false);
+
     try {
       setSaving(true);
       setSaveSuccess(false);
 
-      // Convert subjectsData object to array
+      // Get subjects array
       const subjectsArray = Object.values(subjectsData).slice(0, subjectCount);
 
       // Save each subject as a separate exam data entry
@@ -280,6 +307,51 @@ const Hero = ({ setActiveTab }) => {
           </div>
         )}
 
+        {/* Confirmation Modal */}
+        {showConfirmModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-[fadeIn_0.2s_ease]">
+            <div className="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.3)] max-w-md w-full mx-4 overflow-hidden animate-[scaleIn_0.3s_ease]">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-[#00c9a7] to-[#00a98c] px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-white font-[Syne,sans-serif]">Confirm Submission</h3>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="px-6 py-6">
+                <p className="text-[15px] text-[#1a2e4a] leading-relaxed font-[DM_Sans,sans-serif] mb-2">
+                  Are you sure you want to submit the Panel of Examiners data?
+                </p>
+                <p className="text-[13px] text-[#6b85a3] leading-relaxed font-[DM_Sans,sans-serif]">
+                  This will save <span className="font-bold text-[#00a98c]">{subjectCount} subject(s)</span> with all examiner details.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="px-6 pb-6 flex gap-3">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="flex-1 px-5 py-3 bg-gray-100 text-[#6b85a3] rounded-xl font-bold text-sm hover:bg-gray-200 transition-all duration-200 font-[Syne,sans-serif]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmSaveExamData}
+                  className="flex-1 px-5 py-3 bg-gradient-to-r from-[#00a98c] to-[#00c9a7] text-white rounded-xl font-bold text-sm hover:shadow-[0_8px_20px_rgba(0,201,167,0.4)] hover:-translate-y-0.5 transition-all duration-200 font-[Syne,sans-serif]"
+                >
+                  Yes, Submit
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </main>
 
       <style>{`
@@ -291,6 +363,14 @@ const Hero = ({ setActiveTab }) => {
         @keyframes slideUp {
           from { opacity: 0; transform: translate(-50%, 20px); }
           to   { opacity: 1; transform: translate(-50%, 0); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.9); }
+          to   { opacity: 1; transform: scale(1); }
         }
       `}</style>
     </div>
