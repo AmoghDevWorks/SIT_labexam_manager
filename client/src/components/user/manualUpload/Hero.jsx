@@ -3,10 +3,11 @@ import Subject from "./Subject";
 import { validateData } from "../../utils/downloadUtils";
 import { useUser } from "../../utils/userContext";
 import axios from "axios";
+import { useNavigate } from 'react-router-dom'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
-const Hero = () => {
+const Hero = ({ setActiveTab }) => {
   const { userUid, userName } = useUser(); // Get logged-in examiner ID and name
   const [inputVal, setInputVal] = useState("1");
   const subjectCount = Math.max(1, parseInt(inputVal, 10) || 0);
@@ -21,6 +22,8 @@ const Hero = () => {
   
   // Reset counter to force Subject components to remount
   const [resetCounter, setResetCounter] = useState(0);
+
+  const navigate = useNavigate()
 
   const handleChange = (e) => {
     const raw = e.target.value;
@@ -107,6 +110,13 @@ const Hero = () => {
 
       // Reset success state after 3 seconds
       setTimeout(() => setSaveSuccess(false), 3000);
+
+      // Navigate to docs tab after successful save
+      if (setActiveTab) {
+        setActiveTab('docs');
+      }
+
+      
       
     } catch (error) {
       console.error('Error saving exam data:', error);

@@ -92,7 +92,7 @@ const UserDashboard = () => {
 
       {/* Content Section */}
       <div className="w-full">
-        {activeTab === 'hero' ? <Hero /> : activeTab === 'upload' ? <UploadExcel /> : activeTab === 'docs' ? <UploadDocs /> : <SubjectEntry />}
+        {activeTab === 'hero' ? <Hero setActiveTab={setActiveTab} /> : activeTab === 'upload' ? <UploadExcel /> : activeTab === 'docs' ? <UploadDocs /> : <SubjectEntry />}
       </div>
 
       <style>{`
