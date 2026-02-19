@@ -10,7 +10,6 @@ const subjectSchema = new mongoose.Schema(
     subjectCode: {
       type: String,
       required: true,
-      unique: true,
       uppercase: true,
       trim: true,
     },
