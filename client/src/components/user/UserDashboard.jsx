@@ -43,7 +43,7 @@ const UserDashboard = () => {
               >
                 Create New
               </button>
-              <button
+              {/* <button
                 onClick={() => setActiveTab('upload')}
                 className={`relative px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold tracking-wide transition-all duration-300 font-[Syne,sans-serif] ${
                   activeTab === 'upload'
@@ -52,7 +52,7 @@ const UserDashboard = () => {
                 }`}
               >
                 Upload Excel
-              </button>
+              </button> */}
               <button
                 onClick={() => setActiveTab('docs')}
                 className={`relative px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold tracking-wide transition-all duration-300 font-[Syne,sans-serif] ${

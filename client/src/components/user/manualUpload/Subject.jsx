@@ -337,7 +337,7 @@ const ExternalExaminerCard = ({ index, data, onChange, subjectId, disabled }) =>
           />
         </div>
         <div className="sm:col-span-2">
-          <Label required>Address</Label>
+          <Label required>Address <span className="text-black">[ Enter full college name, department, street details with pincode ]</span></Label>
           <textarea
             rows={2}
             placeholder="Institution / College Address"
@@ -630,7 +630,7 @@ const Subject = ({ index, onChange }) => {
 
           {/* Subject number badge */}
           <div className="flex items-center justify-between mb-5">
-            <SectionHeading icon="📚" title="Subject Details" subtitle="Core information about this subject" />
+            <SectionHeading icon="" title="Subject Details" subtitle="Core information about this subject" />
             <div className="flex items-center gap-2">
               {userUid && (
                 <span className="text-[10px] font-semibold tracking-wider bg-emerald-50 border border-emerald-200 text-emerald-700 px-2.5 py-1 rounded-full font-[Syne,sans-serif]">
@@ -758,7 +758,7 @@ const Subject = ({ index, onChange }) => {
           {/* Examiners Count Control */}
           <div className="mb-5">
             <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
-              <SectionHeading icon="👥" title="Examiners" subtitle="Configure internal and external examiners" />
+              <SectionHeading icon="" title="Examiners" subtitle="Configure internal and external examiners" />
               <div className="flex flex-col gap-3">
                 <CountStepper 
                   label="Internal" 
@@ -772,7 +772,7 @@ const Subject = ({ index, onChange }) => {
 
             {/* Internal Examiners */}
             <div className="mb-6">
-              <h4 className="text-[12px] font-bold text-[#1a2e4a] mb-3 font-[Syne,sans-serif]">🎓 Internal Examiners</h4>
+              <h4 className="text-[12px] font-bold text-[#1a2e4a] mb-3 font-[Syne,sans-serif]"> Internal Examiners</h4>
               {loading ? (
                 <div className="bg-sky-50 border border-[#00c9a7]/25 rounded-xl p-4 animate-pulse">
                   <div className="h-10 bg-[#00c9a7]/20 rounded"></div>
@@ -797,7 +797,7 @@ const Subject = ({ index, onChange }) => {
             {/* External Examiners */}
             <div className="mb-5">
               <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
-                <SectionHeading icon="👥" title="Examiners" subtitle="Configure internal and external examiners" />
+                <SectionHeading icon="" title="Examiners" subtitle="Configure internal and external examiners" />
                 <div className="flex flex-col gap-3">
                   <CountStepper 
                     label="External" 
@@ -811,7 +811,7 @@ const Subject = ({ index, onChange }) => {
               </div>
             </div>
             <div>
-              <h4 className="text-[12px] font-bold text-[#1a2e4a] mb-3 font-[Syne,sans-serif]">🏛️ External Examiners</h4>
+              <h4 className="text-[12px] font-bold text-[#1a2e4a] mb-3 font-[Syne,sans-serif]">️ External Examiners</h4>
               <div className="flex flex-col gap-5">
                 {externals.map((examiner, i) => (
                   <ExternalExaminerCard key={i} index={i} data={examiner} onChange={updateExternal} subjectId={id} disabled={isDataLocked || !selectedSemester || !subjectCode} />
@@ -837,7 +837,7 @@ const Subject = ({ index, onChange }) => {
             <div className="mb-5 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 shadow-[0_4px_16px_rgba(59,130,246,0.15)]">
               <div className="flex items-start gap-3 mb-3">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm shadow-[0_4px_10px_rgba(59,130,246,0.3)] shrink-0">
-                  📝
+                  
                 </div>
                 <div className="flex-1">
                   <h4 className="text-[12px] font-bold text-blue-900 font-[Syne,sans-serif] mb-1">

@@ -86,7 +86,7 @@ const UserLogin = () => {
                 </svg>
               </div>
               <h1 className="text-[28px] font-extrabold text-[#1a2e4a] font-[Syne,sans-serif]">
-                Examiner Login
+                Faculty Login
               </h1>
               <p className="text-[13px] text-[#6b85a3] mt-1.5 font-[DM_Sans,sans-serif]">
                 Enter your credentials to continue

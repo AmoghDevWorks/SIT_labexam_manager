@@ -7,8 +7,8 @@ const Home = () => {
 
   const loginOptions = [
     {
-      title: 'Examiner Login',
-      description: 'Access your examiner dashboard to manage lab exams and student assessments',
+      title: 'Faculty Login',
+      description: 'Access your faculty dashboard to manage panel of examiners',
       icon: UserCircle,
       path: '/user/login',
       gradient: 'from-[#0f1f3d] to-[#162847]',
