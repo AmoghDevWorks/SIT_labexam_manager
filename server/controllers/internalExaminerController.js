@@ -6,7 +6,11 @@ const bcrypt = require("bcrypt");
 // =======================
 exports.createInternalExaminer = async (req, res) => {
   try {
-    const { name, password } = req.body;
+    const { username, name, password } = req.body;
+
+    if (!username) {
+      return res.status(400).json({ message: "Username is required" });
+    }
 
     if (!name) {
       return res.status(400).json({ message: "Name is required" });
@@ -16,16 +20,20 @@ exports.createInternalExaminer = async (req, res) => {
       return res.status(400).json({ message: "Password is required" });
     }
 
-    const existing = await InternalExaminer.findOne({ name });
+    const existing = await InternalExaminer.findOne({ username: username.toLowerCase() });
 
     if (existing) {
-      return res.status(400).json({ message: "Examiner already exists" });
+      return res.status(400).json({ message: "Username already exists" });
     }
 
     // Hash password before saving
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const examiner = await InternalExaminer.create({ name, password: hashedPassword });
+    const examiner = await InternalExaminer.create({ 
+      username: username.toLowerCase(), 
+      name, 
+      password: hashedPassword 
+    });
 
     res.status(201).json({
       message: "Internal Examiner created successfully",
@@ -54,21 +62,36 @@ exports.getAllInternalExaminers = async (req, res) => {
 // =======================
 exports.updateInternalExaminer = async (req, res) => {
   try {
-    const { name } = req.body;
+    const { username, name, password } = req.body;
+
+    if (!username) {
+      return res.status(400).json({ message: "Username is required" });
+    }
 
     if (!name) {
       return res.status(400).json({ message: "Name is required" });
     }
 
-    const existing = await InternalExaminer.findOne({ name });
+    // Check if username is already taken by another examiner
+    const existing = await InternalExaminer.findOne({ username: username.toLowerCase() });
 
     if (existing && existing._id.toString() !== req.params.id) {
-      return res.status(400).json({ message: "Examiner name already exists" });
+      return res.status(400).json({ message: "Username already exists" });
+    }
+
+    const updateData = { 
+      username: username.toLowerCase(), 
+      name 
+    };
+
+    // Only update password if provided
+    if (password) {
+      updateData.password = await bcrypt.hash(password, 10);
     }
 
     const updatedExaminer = await InternalExaminer.findByIdAndUpdate(
       req.params.id,
-      { name },
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -109,13 +132,13 @@ exports.deleteInternalExaminer = async (req, res) => {
 // =======================
 exports.loginInternalExaminer = async (req, res) => {
   try {
-    const { name, password } = req.body;
+    const { username, password } = req.body;
 
-    if (!name || !password) {
-      return res.status(400).json({ message: "Name and password are required" });
+    if (!username || !password) {
+      return res.status(400).json({ message: "Username and password are required" });
     }
 
-    const examiner = await InternalExaminer.findOne({ name });
+    const examiner = await InternalExaminer.findOne({ username: username.toLowerCase() });
 
     if (!examiner) {
       return res.status(401).json({ message: "Invalid credentials" });
@@ -132,6 +155,7 @@ exports.loginInternalExaminer = async (req, res) => {
       message: "Login successful",
       examiner: {
         id: examiner._id,
+        username: examiner.username,
         name: examiner.name,
       },
     });

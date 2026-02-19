@@ -45,17 +45,18 @@ const Spinner = ({ sm }) => (
 /* ════════════════════════════════════════════
    EXAMINER MODAL  (Add + Edit unified)
 ════════════════════════════════════════════ */
-const ExaminerModal = ({ mode, initial, onClose, onSave, existingNames, loading }) => {
+const ExaminerModal = ({ mode, initial, onClose, onSave, existingExaminers, loading }) => {
   const isEdit = mode === "edit";
+  const [username, setUsername] = useState(initial?.username ?? "");
   const [name, setName] = useState(initial?.name ?? "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
-  const nameRef = useRef(null);
+  const usernameRef = useRef(null);
   const overlayRef = useRef(null);
 
   useEffect(() => {
-    const t = setTimeout(() => nameRef.current?.focus(), 80);
+    const t = setTimeout(() => usernameRef.current?.focus(), 80);
     return () => clearTimeout(t);
   }, []);
 
@@ -67,15 +68,24 @@ const ExaminerModal = ({ mode, initial, onClose, onSave, existingNames, loading 
 
   const validate = () => {
     const errs = {};
+    
+    // Validate username
+    if (!username.trim()) {
+      errs.username = "Username is required";
+    } else {
+      const trimmedUsername = username.trim().toLowerCase();
+      const isDuplicate = isEdit
+        ? existingExaminers.filter((ex) => ex.username !== initial.username).some(ex => ex.username.toLowerCase() === trimmedUsername)
+        : existingExaminers.some(ex => ex.username.toLowerCase() === trimmedUsername);
+      if (isDuplicate) errs.username = "This username already exists";
+    }
+    
+    // Validate name
     if (!name.trim()) {
       errs.name = "Examiner name is required";
-    } else {
-      const trimmedName = name.trim();
-      const isDuplicate = isEdit
-        ? existingNames.filter((n) => n !== initial.name).some(n => n.toLowerCase() === trimmedName.toLowerCase())
-        : existingNames.some(n => n.toLowerCase() === trimmedName.toLowerCase());
-      if (isDuplicate) errs.name = "This examiner name already exists";
     }
+    
+    // Validate password (only for new examiners)
     if (!isEdit) {
       if (!password.trim()) {
         errs.password = "Password is required";
@@ -90,7 +100,7 @@ const ExaminerModal = ({ mode, initial, onClose, onSave, existingNames, loading 
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
-    onSave({ name: name.trim(), password: password.trim() });
+    onSave({ username: username.trim(), name: name.trim(), password: password.trim() });
   };
 
   return (
@@ -148,10 +158,23 @@ const ExaminerModal = ({ mode, initial, onClose, onSave, existingNames, loading 
         <form onSubmit={handleSubmit} className="px-7 py-5 flex flex-col gap-5">
           <div>
             <label className="block text-[11px] font-bold tracking-[0.1em] uppercase text-[#6b85a3] mb-1.5 font-[Syne,sans-serif]">
+              Username <span className="text-[#00c9a7]">*</span>
+            </label>
+            <input
+              ref={usernameRef}
+              className={`${inputCls} ${errors.username ? "!border-rose-300 focus:!shadow-[0_0_0_3px_rgba(244,63,94,0.1)]" : ""}`}
+              placeholder="e.g. johnsmith (used for login)"
+              value={username}
+              onChange={(e) => { setUsername(e.target.value); setErrors((p) => ({ ...p, username: "" })); }}
+            />
+            <FieldError msg={errors.username} />
+          </div>
+          
+          <div>
+            <label className="block text-[11px] font-bold tracking-[0.1em] uppercase text-[#6b85a3] mb-1.5 font-[Syne,sans-serif]">
               Examiner Name <span className="text-[#00c9a7]">*</span>
             </label>
             <input
-              ref={nameRef}
               className={`${inputCls} ${errors.name ? "!border-rose-300 focus:!shadow-[0_0_0_3px_rgba(244,63,94,0.1)]" : ""}`}
               placeholder="e.g. Dr. John Smith"
               value={name}
@@ -191,6 +214,40 @@ const ExaminerModal = ({ mode, initial, onClose, onSave, existingNames, loading 
                 </button>
               </div>
               <FieldError msg={errors.password} />
+            </div>
+          )}
+
+          {isEdit && (
+            <div>
+              <label className="block text-[11px] font-bold tracking-[0.1em] uppercase text-[#6b85a3] mb-1.5 font-[Syne,sans-serif]">
+                New Password <span className="text-[#6b85a3]">(Optional)</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  className={`${inputCls} pr-12`}
+                  placeholder="Leave blank to keep current password"
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setErrors((p) => ({ ...p, password: "" })); }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#6b85a3] hover:text-[#00c9a7] transition-colors"
+                >
+                  {showPassword ? (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              <p className="mt-1.5 text-[10px] text-[#6b85a3] font-[DM_Sans,sans-serif]">Only fill this if you want to change the password</p>
             </div>
           )}
 
@@ -466,6 +523,7 @@ const ManageInternalExaminer = () => {
         // Map API response to frontend format
         const mappedExaminers = response.data.map(examiner => ({
           id: examiner._id,
+          username: examiner.username,
           name: examiner.name
         }));
         setExaminers(mappedExaminers);
@@ -481,13 +539,14 @@ const ManageInternalExaminer = () => {
   }, [adminUid]);
 
   /* ── ADD examiner ── */
-  const handleAdd = async ({ name, password }) => {
+  const handleAdd = async ({ username, name, password }) => {
     setModalLoading(true);
     try {
-      const response = await axios.post(`${BACKEND_URL}/api/internal-examiners`, { name, password });
+      const response = await axios.post(`${BACKEND_URL}/api/internal-examiners`, { username, name, password });
       // Map API response to frontend format
       const newExaminer = {
         id: response.data.examiner._id,
+        username: response.data.examiner.username,
         name: response.data.examiner.name
       };
       setExaminers((prev) => [newExaminer, ...prev]);
@@ -501,17 +560,21 @@ const ManageInternalExaminer = () => {
   };
 
   /* ── EDIT examiner ── */
-  const handleEdit = async ({ name }) => {
+  const handleEdit = async ({ username, name, password }) => {
     setModalLoading(true);
     try {
+      const updateData = { username, name };
+      if (password) updateData.password = password;
+      
       const response = await axios.put(
         `${BACKEND_URL}/api/internal-examiners/${activeExaminer.id}`,
-        { name }
+        updateData
       );
       // Map API response to frontend format
       const updatedExaminer = {
-        id: response.data._id,
-        name: response.data.name
+        id: response.data.examiner._id,
+        username: response.data.examiner.username,
+        name: response.data.examiner.name
       };
       setExaminers((prev) =>
         prev.map((e) => (e.id === activeExaminer.id ? updatedExaminer : e))
@@ -543,7 +606,7 @@ const ManageInternalExaminer = () => {
   };
 
   /* ── Derived ── */
-  const existingNames = examiners.map((e) => e.name ?? "");
+  const existingExaminers = examiners;
 
   const filtered = examiners.filter((e) => {
     const name = e?.name ?? "";
@@ -732,7 +795,7 @@ const ManageInternalExaminer = () => {
           mode="add"
           onClose={() => setModal(null)}
           onSave={handleAdd}
-          existingNames={existingNames}
+          existingExaminers={existingExaminers}
           loading={modalLoading}
         />
       )}
@@ -744,7 +807,7 @@ const ManageInternalExaminer = () => {
           initial={activeExaminer}
           onClose={() => { setModal(null); setActiveExaminer(null); }}
           onSave={handleEdit}
-          existingNames={existingNames}
+          existingExaminers={existingExaminers}
           loading={modalLoading}
         />
       )}

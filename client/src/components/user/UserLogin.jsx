@@ -4,7 +4,7 @@ import { useUser } from "../utils/userContext";
 import { useNavigate } from "react-router-dom";
 
 const UserLogin = () => {
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -22,10 +22,10 @@ const UserLogin = () => {
     setIsLoading(true);
 
     try {
-      console.log('Attempting login with name:', name);
+      console.log('Attempting login with username:', username);
       
       const response = await axios.post(`${BACKEND_URL}/api/internal-examiners/login`, {
-        name,
+        username,
         password
       });
 
@@ -102,10 +102,10 @@ const UserLogin = () => {
                 </div>
               )}
 
-              {/* Name Field */}
+              {/* Username Field */}
               <div>
                 <label className="block text-[11px] font-bold tracking-[0.1em] uppercase text-[#6b85a3] mb-2 font-[Syne,sans-serif]">
-                  Examiner Name
+                  Username
                   <span className="text-[#00c9a7] ml-0.5">*</span>
                 </label>
                 <div className="relative">
@@ -116,9 +116,9 @@ const UserLogin = () => {
                   </div>
                   <input
                     type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter your name"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Enter your username"
                     className="w-full pl-12 pr-4 py-3 text-sm text-[#1a2e4a] bg-sky-50 border border-[#00c9a7]/25 rounded-xl outline-none transition-all duration-200 focus:border-[#00c9a7] focus:shadow-[0_0_0_3px_rgba(0,201,167,0.12)] placeholder:text-[#6b85a3]/60 font-[DM_Sans,sans-serif]"
                     required
                   />

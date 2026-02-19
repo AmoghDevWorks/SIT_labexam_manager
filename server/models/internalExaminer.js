@@ -2,11 +2,17 @@ const mongoose = require("mongoose");
 
 const internalExaminerSchema = new mongoose.Schema(
   {
+    username: {
+      type: String,
+      required: [true, "Username is required"],
+      trim: true,
+      unique: true,
+      lowercase: true,
+    },
     name: {
       type: String,
       required: [true, "Name is required"],
       trim: true,
-      unique: true,
     },
     password: {
       type: String,

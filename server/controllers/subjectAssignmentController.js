@@ -66,7 +66,7 @@ exports.getAssignmentsBySubject = async (req, res) => {
     const { subjectId } = req.params;
 
     const assignments = await SubjectAssignment.find({ subjectId })
-      .populate("internalExaminerId", "name")
+      .populate("internalExaminerId", "username name")
       .sort({ createdAt: -1 });
 
     res.json(assignments);
@@ -104,7 +104,7 @@ exports.getUnassignedExaminers = async (req, res) => {
     // Get all examiners not in the assigned list
     const unassignedExaminers = await InternalExaminer.find({
       _id: { $nin: assignedExaminerIds }
-    }).select("name").sort({ name: 1 });
+    }).select("username name").sort({ name: 1 });
 
     res.json(unassignedExaminers);
   } catch (error) {
