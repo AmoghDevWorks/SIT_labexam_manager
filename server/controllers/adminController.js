@@ -1,5 +1,6 @@
 const Admin = require("../models/admin");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 // =======================
 // ADMIN SIGNUP
@@ -67,8 +68,20 @@ exports.loginAdmin = async (req, res) => {
       return res.status(400).json({ message: "Invalid username or password" });
     }
 
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        id: admin._id, 
+        username: admin.username, 
+        role: "admin" 
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "24h" }
+    );
+
     res.status(200).json({
       message: "Login successful",
+      token,
       admin: {
         id: admin._id,
         username: admin.username,

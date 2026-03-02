@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { verifyToken, verifyAdmin } = require("../middleware/authMiddleware");
 const {
   assignExaminerToSubject,
   removeAssignment,
@@ -8,19 +9,13 @@ const {
   getUnassignedExaminers,
 } = require("../controllers/subjectAssignmentController");
 
-// POST /api/subject-assignments - Assign examiner to subject
-router.post("/", assignExaminerToSubject);
+// Admin-only operations
+router.post("/", verifyToken, verifyAdmin, assignExaminerToSubject);
+router.delete("/:assignmentId", verifyToken, verifyAdmin, removeAssignment);
 
-// DELETE /api/subject-assignments/:assignmentId - Remove assignment
-router.delete("/:assignmentId", removeAssignment);
-
-// GET /api/subject-assignments/subject/:subjectId - Get all assignments for a subject
-router.get("/subject/:subjectId", getAssignmentsBySubject);
-
-// GET /api/subject-assignments/examiner/:examinerId - Get all subjects for an examiner
-router.get("/examiner/:examinerId", getSubjectsByExaminer);
-
-// GET /api/subject-assignments/unassigned/:subjectId - Get unassigned examiners for subject
-router.get("/unassigned/:subjectId", getUnassignedExaminers);
+// Read operations - accessible by authenticated users
+router.get("/subject/:subjectId", verifyToken, getAssignmentsBySubject);
+router.get("/examiner/:examinerId", verifyToken, getSubjectsByExaminer);
+router.get("/unassigned/:subjectId", verifyToken, getUnassignedExaminers);
 
 module.exports = router;

@@ -14,7 +14,7 @@ const UserLogin = () => {
 
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
-  const { setUserUid, setUserName, userUid } = useUser();
+  const { setUserUid, setUserName, setUserToken, userUid } = useUser();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,12 +33,15 @@ const UserLogin = () => {
 
       const examinerId = response.data.examiner.id;
       const examinerName = response.data.examiner.name;
+      const token = response.data.token;
       
       console.log('Setting userUid to:', examinerId);
       console.log('Setting userName to:', examinerName);
+      console.log('Setting token');
       
       setUserUid(examinerId);
       setUserName(examinerName);
+      setUserToken(token);
     } catch (err) {
       console.error('Login error:', err);
       setError(err.response?.data?.message || 'Login failed. Please try again.');

@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { verifyToken, verifyAdmin } = require("../middleware/authMiddleware");
 
 const {
   createInternalExaminer,
@@ -9,10 +10,15 @@ const {
   loginInternalExaminer,
 } = require("../controllers/internalExaminerController");
 
-router.post("/", createInternalExaminer);
+// Public route - login
 router.post("/login", loginInternalExaminer);
-router.get("/", getAllInternalExaminers);
-router.put("/:id", updateInternalExaminer);
-router.delete("/:id", deleteInternalExaminer);
+
+// Admin-only operations
+router.post("/", verifyToken, verifyAdmin, createInternalExaminer);
+router.put("/:id", verifyToken, verifyAdmin, updateInternalExaminer);
+router.delete("/:id", verifyToken, verifyAdmin, deleteInternalExaminer);
+
+// Read operations - accessible by authenticated users
+router.get("/", verifyToken, getAllInternalExaminers);
 
 module.exports = router;

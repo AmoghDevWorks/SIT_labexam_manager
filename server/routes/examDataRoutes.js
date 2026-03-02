@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { verifyToken, verifyAdmin } = require('../middleware/authMiddleware');
 const {
   createExamData,
   getAllExamData,
@@ -11,28 +12,19 @@ const {
   checkExistingExamData
 } = require('../controllers/examDataController');
 
-// Create new exam data
-router.post('/', createExamData);
+// All routes require authentication
+// Create new exam data - accessible by authenticated users (internal examiners)
+router.post('/', verifyToken, createExamData);
 
-// Get all exam data
-router.get('/', getAllExamData);
+// Read operations - accessible by authenticated users
+router.get('/', verifyToken, getAllExamData);
+router.get('/check/:semester/:subjectCode', verifyToken, checkExistingExamData);
+router.get('/:id', verifyToken, getExamDataById);
+router.get('/semester/:semester', verifyToken, getExamDataBySemester);
+router.get('/semester/:semester/subject/:subjectName', verifyToken, getExamDataBySemesterAndSubject);
 
-// Check if exam data exists for semester and subject code (must be before /:id route)
-router.get('/check/:semester/:subjectCode', checkExistingExamData);
-
-// Get exam data by ID
-router.get('/:id', getExamDataById);
-
-// Get exam data by semester
-router.get('/semester/:semester', getExamDataBySemester);
-
-// Get exam data by semester and subject
-router.get('/semester/:semester/subject/:subjectName', getExamDataBySemesterAndSubject);
-
-// Update exam data
-router.put('/:id', updateExamData);
-
-// Delete exam data
-router.delete('/:id', deleteExamData);
+// Update and Delete - admin only
+router.put('/:id', verifyToken, verifyAdmin, updateExamData);
+router.delete('/:id', verifyToken, verifyAdmin, deleteExamData);
 
 module.exports = router;

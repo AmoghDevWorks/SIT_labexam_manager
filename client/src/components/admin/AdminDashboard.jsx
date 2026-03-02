@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '../utils/adminContext';
 
 const AdminDashboard = () => {
-  const { adminUid, setAdminUid } = useAdmin();
+  const { adminUid, logout } = useAdmin();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -13,7 +13,7 @@ const AdminDashboard = () => {
   }, [adminUid, navigate]);
 
   const handleLogout = () => {
-    setAdminUid(null);
+    logout();
     navigate('/');
   };
 

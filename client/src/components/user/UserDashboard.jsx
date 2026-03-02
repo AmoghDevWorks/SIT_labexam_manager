@@ -8,7 +8,7 @@ import SubjectEntry from './subjectEntry/SubjectEntry';
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState('hero'); // 'hero' | 'upload' | 'docs' | 'entry'
-  const { userUid, setUserUid, setUserName } = useUser();
+  const { userUid, logout } = useUser();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,8 +18,7 @@ const UserDashboard = () => {
   }, [userUid, navigate]);
 
   const handleLogout = () => {
-    setUserUid(null);
-    setUserName(null);
+    logout();
     navigate('/');
   };
 

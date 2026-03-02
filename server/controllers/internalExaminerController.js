@@ -1,5 +1,6 @@
 const InternalExaminer = require("../models/internalExaminer");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 // =======================
 // CREATE INTERNAL EXAMINER
@@ -151,8 +152,21 @@ exports.loginInternalExaminer = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        id: examiner._id, 
+        username: examiner.username, 
+        name: examiner.name,
+        role: "internal-examiner" 
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "24h" }
+    );
+
     res.status(200).json({
       message: "Login successful",
+      token,
       examiner: {
         id: examiner._id,
         username: examiner.username,

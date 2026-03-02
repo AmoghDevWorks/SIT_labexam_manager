@@ -14,7 +14,7 @@ const AdminLogin = () => {
 
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
-  const { setAdminUid,adminUid  } = useAdmin();
+  const { setAdminUid, setAdminToken, adminUid } = useAdmin();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,8 +27,11 @@ const AdminLogin = () => {
         password
       });
 
-      const adminId = response.data.admin.id
-      setAdminUid(adminId)
+      const adminId = response.data.admin.id;
+      const token = response.data.token;
+      
+      setAdminUid(adminId);
+      setAdminToken(token);
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please try again.');
     } finally {
