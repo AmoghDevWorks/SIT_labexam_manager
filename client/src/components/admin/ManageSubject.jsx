@@ -81,8 +81,8 @@ const SubjectModal = ({ mode, initial, onClose, onSave, existingCodes, loading }
     if (!name.trim()) errs.name = "Subject name is required";
     if (!code.trim()) {
       errs.code = "Subject code is required";
-    } else if (!/^[A-Za-z0-9]+$/.test(code.trim())) {
-      errs.code = "Only letters and numbers allowed";
+    } else if (!/^[A-Za-z0-9/]+$/.test(code.trim())) {
+      errs.code = "Only letters, numbers and / allowed";
     } else {
       const upper = code.trim().toUpperCase();
       const isDuplicate = isEdit
@@ -176,7 +176,6 @@ const SubjectModal = ({ mode, initial, onClose, onSave, existingCodes, loading }
               className={`${inputCls} uppercase tracking-widest font-bold ${errors.code ? "!border-rose-300 focus:!shadow-[0_0_0_3px_rgba(244,63,94,0.1)]" : ""}`}
               placeholder="e.g. CS301"
               value={code}
-              maxLength={10}
               onChange={(e) => { setCode(e.target.value.toUpperCase()); setErrors((p) => ({ ...p, code: "" })); }}
             />
             <FieldError msg={errors.code} />
