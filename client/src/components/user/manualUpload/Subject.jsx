@@ -450,7 +450,8 @@ const Subject = ({ index, onChange }) => {
           id: s._id,
           name: s.subjectName,
           code: s.subjectCode,
-          semester: s.semester
+          semester: s.semester,
+          numberOfExternal: s.numberOfExternal || 1
         }));
         
         console.log('All subjects:', allSubjects);
@@ -564,6 +565,10 @@ const Subject = ({ index, onChange }) => {
     if (subject) {
       setSubjectName(subject.name);
       setSemester(subject.semester);
+      // Set external count based on subject's numberOfExternal
+      const extCount = subject.numberOfExternal || 1;
+      setExternalCount(extCount.toString());
+      setExternals(syncArray(externals, extCount.toString(), blankExternal));
     }
   };
 
@@ -796,22 +801,12 @@ const Subject = ({ index, onChange }) => {
 
             {/* External Examiners */}
             <div className="mb-5">
-              <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
-                <SectionHeading icon="" title="Examiners" subtitle="Configure internal and external examiners" />
-                <div className="flex flex-col gap-3">
-                  <CountStepper 
-                    label="External" 
-                    value={externalCount} 
-                    onChange={handleExternalCount} 
-                    min={1} 
-                    max={4}
-                    disabled={isDataLocked || !selectedSemester || !subjectCode} 
-                  />
-                </div>
+              <div className="flex items-start justify-between flex-wrap gap-4 mb-3">
+                <h4 className="text-[12px] font-bold text-[#1a2e4a] font-[Syne,sans-serif]">️ External Examiners</h4>
+                <span className="text-[11px] font-bold tracking-widest uppercase bg-amber-50 border border-amber-200 text-amber-700 px-3 py-1 rounded-full font-[Syne,sans-serif]">
+                  {externalCount} {parseInt(externalCount) === 1 ? 'Examiner' : 'Examiners'}
+                </span>
               </div>
-            </div>
-            <div>
-              <h4 className="text-[12px] font-bold text-[#1a2e4a] mb-3 font-[Syne,sans-serif]">️ External Examiners</h4>
               <div className="flex flex-col gap-5">
                 {externals.map((examiner, i) => (
                   <ExternalExaminerCard key={i} index={i} data={examiner} onChange={updateExternal} subjectId={id} disabled={isDataLocked || !selectedSemester || !subjectCode} />

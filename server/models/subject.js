@@ -18,6 +18,12 @@ const subjectSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    numberOfExternal: {
+      type: Number,
+      required: true,
+      min: 1,
+      max: 4,
+    },
   },
   { timestamps: true }
 );

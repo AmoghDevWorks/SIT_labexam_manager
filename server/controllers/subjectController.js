@@ -5,10 +5,14 @@ const Subject = require("../models/subject");
 // =======================
 exports.createSubject = async (req, res) => {
   try {
-    const { subjectName, subjectCode, semester } = req.body;
+    const { subjectName, subjectCode, semester, numberOfExternal } = req.body;
 
-    if (!subjectName || !subjectCode || !semester) {
+    if (!subjectName || !subjectCode || !semester || !numberOfExternal) {
       return res.status(400).json({ message: "All fields are required" });
+    }
+
+    if (numberOfExternal < 1 || numberOfExternal > 4) {
+      return res.status(400).json({ message: "Number of external examiners must be between 1 and 4" });
     }
 
     const existingSubject = await Subject.findOne({ subjectCode });
@@ -21,6 +25,7 @@ exports.createSubject = async (req, res) => {
       subjectName,
       subjectCode,
       semester,
+      numberOfExternal,
     });
 
     res.status(201).json({
@@ -67,11 +72,15 @@ exports.getSubjectById = async (req, res) => {
 // =======================
 exports.updateSubject = async (req, res) => {
   try {
-    const { subjectName, subjectCode, semester } = req.body;
+    const { subjectName, subjectCode, semester, numberOfExternal } = req.body;
+
+    if (numberOfExternal && (numberOfExternal < 1 || numberOfExternal > 4)) {
+      return res.status(400).json({ message: "Number of external examiners must be between 1 and 4" });
+    }
 
     const subject = await Subject.findByIdAndUpdate(
       req.params.id,
-      { subjectName, subjectCode, semester },
+      { subjectName, subjectCode, semester, numberOfExternal },
       { new: true, runValidators: true }
     );
 

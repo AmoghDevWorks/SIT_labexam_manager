@@ -59,6 +59,7 @@ const SubjectModal = ({ mode, initial, onClose, onSave, existingCodes, loading }
   const [name, setName] = useState(initial?.name ?? "");
   const [code, setCode] = useState(initial?.code ?? "");
   const [semester, setSemester] = useState(initial?.semester ?? "");
+  const [numberOfExternal, setNumberOfExternal] = useState(initial?.numberOfExternal ?? 1);
   const [errors, setErrors] = useState({});
   const nameRef = useRef(null);
   const overlayRef = useRef(null);
@@ -91,6 +92,9 @@ const SubjectModal = ({ mode, initial, onClose, onSave, existingCodes, loading }
       if (isDuplicate) errs.code = "This subject code already exists";
     }
     if (!semester) errs.semester = "Semester is required";
+    if (!numberOfExternal || numberOfExternal < 1 || numberOfExternal > 4) {
+      errs.numberOfExternal = "Number of external examiners must be between 1 and 4";
+    }
     return errs;
   };
 
@@ -98,7 +102,7 @@ const SubjectModal = ({ mode, initial, onClose, onSave, existingCodes, loading }
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
-    onSave({ name: name.trim(), code: code.trim().toUpperCase(), semester });
+    onSave({ name: name.trim(), code: code.trim().toUpperCase(), semester, numberOfExternal: parseInt(numberOfExternal) });
   };
 
   return (
@@ -196,6 +200,23 @@ const SubjectModal = ({ mode, initial, onClose, onSave, existingCodes, loading }
               ))}
             </select>
             <FieldError msg={errors.semester} />
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold tracking-[0.1em] uppercase text-[#6b85a3] mb-1.5 font-[Syne,sans-serif]">
+              Number of External Examiners <span className="text-[#00c9a7]">*</span>
+            </label>
+            <select
+              className={`${inputCls} cursor-pointer appearance-none bg-[url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2300c9a7' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")] bg-no-repeat bg-[right_14px_center] ${errors.numberOfExternal ? "!border-rose-300 focus:!shadow-[0_0_0_3px_rgba(244,63,94,0.1)]" : ""}`}
+              value={numberOfExternal}
+              onChange={(e) => { setNumberOfExternal(e.target.value); setErrors((p) => ({ ...p, numberOfExternal: "" })); }}
+            >
+              <option value={1}>1 Examiner</option>
+              <option value={2}>2 Examiners</option>
+              <option value={3}>3 Examiners</option>
+              <option value={4}>4 Examiners</option>
+            </select>
+            <FieldError msg={errors.numberOfExternal} />
           </div>
 
           <div className="flex gap-3 pt-1">
@@ -798,6 +819,14 @@ const SubjectCard = ({ subject, index, onEdit, onDelete, onManageExaminers, onCh
                   </span>
                 </div>
               )}
+              {subject.numberOfExternal && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#6b85a3] mb-0.5 font-[Syne,sans-serif]">Externals</p>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-bold font-[Syne,sans-serif]">
+                    {subject.numberOfExternal}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -984,7 +1013,8 @@ const ManageSubject = () => {
           id: subject._id,
           name: subject.subjectName,
           code: subject.subjectCode,
-          semester: subject.semester
+          semester: subject.semester,
+          numberOfExternal: subject.numberOfExternal
         }));
         setSubjects(mappedSubjects);
       } catch (err) {
@@ -999,20 +1029,22 @@ const ManageSubject = () => {
   }, [adminUid]);
 
   /* ── ADD subject ── */
-  const handleAdd = async ({ name, code, semester }) => {
+  const handleAdd = async ({ name, code, semester, numberOfExternal }) => {
     setModalLoading(true);
     try {
       const response = await axios.post(`${BACKEND_URL}/api/subjects`, { 
         subjectName: name, 
         subjectCode: code,
-        semester
+        semester,
+        numberOfExternal
       });
       // Map API response to frontend format
       const newSubject = {
         id: response.data.subject._id,
         name: response.data.subject.subjectName,
         code: response.data.subject.subjectCode,
-        semester: response.data.subject.semester
+        semester: response.data.subject.semester,
+        numberOfExternal: response.data.subject.numberOfExternal
       };
       setSubjects((prev) => [...prev, newSubject]);
       showToast(`"${name}" added successfully`);
@@ -1025,19 +1057,20 @@ const ManageSubject = () => {
   };
 
   /* ── EDIT subject ── */
-  const handleEdit = async ({ name, code, semester }) => {
+  const handleEdit = async ({ name, code, semester, numberOfExternal }) => {
     setModalLoading(true);
     try {
       const response = await axios.put(
         `${BACKEND_URL}/api/subjects/${activeSubject.id}`,
-        { subjectName: name, subjectCode: code, semester }
+        { subjectName: name, subjectCode: code, semester, numberOfExternal }
       );
       // Map API response to frontend format
       const updatedSubject = {
         id: response.data.subject._id,
         name: response.data.subject.subjectName,
         code: response.data.subject.subjectCode,
-        semester: response.data.subject.semester
+        semester: response.data.subject.semester,
+        numberOfExternal: response.data.subject.numberOfExternal
       };
       setSubjects((prev) =>
         prev.map((s) => (s.id === activeSubject.id ? updatedSubject : s))
