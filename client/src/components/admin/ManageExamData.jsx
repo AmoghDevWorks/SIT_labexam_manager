@@ -18,6 +18,7 @@ const ManageExamData = () => {
   const [saving, setSaving] = useState(false);
   const [showBulkDownloadModal, setShowBulkDownloadModal] = useState(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [showSingleDeleteModal, setShowSingleDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [documentTitle, setDocumentTitle] = useState('Panel of Examiners for ODD Semester (2025-2026) - December 2025 - January 2026');
 
@@ -258,6 +259,30 @@ const ManageExamData = () => {
     }
   };
 
+  // Delete single exam data
+  const handleDeleteSingleExamData = async () => {
+    if (!selectedExamData) return;
+    
+    try {
+      setDeleting(true);
+
+      await axios.delete(`${BACKEND_URL}/api/exam-data/${selectedExamData._id}`);
+      
+      alert(`✅ Exam data for ${selectedExamData.subjectCode} deleted successfully!`);
+      setShowSingleDeleteModal(false);
+      setShowModal(false);
+      setSelectedExamData(null);
+      
+      // Refresh data
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting exam data:', error);
+      alert(`❌ Error deleting exam data: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <>
       <style>{`
@@ -475,9 +500,9 @@ const ManageExamData = () => {
       {/* Modal */}
       {showModal && selectedExamData && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.3)] max-w-4xl w-full max-h-[90vh] overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.3)] max-w-4xl w-full max-h-[90vh] flex flex-col">
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-[#0f1f3d] to-[#162847] px-8 py-6 border-b border-[#00c9a7]/20">
+            <div className="bg-gradient-to-r from-[#0f1f3d] to-[#162847] px-8 py-6 border-b border-[#00c9a7]/20 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-[22px] font-bold text-white font-[Syne,sans-serif]">
@@ -499,7 +524,7 @@ const ManageExamData = () => {
             </div>
 
             {/* Modal Content */}
-            <div className="p-8 overflow-y-auto max-h-[calc(90vh-200px)]">
+            <div className="p-8 overflow-y-auto flex-1 min-h-0">
               {/* Subject Details */}
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="bg-sky-50 border border-[#00c9a7]/20 rounded-xl p-4">
@@ -585,46 +610,64 @@ const ManageExamData = () => {
             </div>
 
             {/* Modal Footer - Action Buttons */}
-            <div className="bg-sky-50 border-t border-[#00c9a7]/20 px-8 py-5">
-              {/* Stacked layout for sm, row layout for md+ */}
-              <div className="flex flex-col md:flex-row gap-3">
-                <button
-                  onClick={handleEditClick}
-                  className="w-full md:w-auto group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl shadow-[0_4px_16px_rgba(37,99,235,0.2)] hover:shadow-[0_6px_24px_rgba(37,99,235,0.3)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
-                >
-                  <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                  <svg className="relative w-5 h-5" viewBox="0 0 24 24" fill="none">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Edit Data</span>
-                </button>
-                
-                <button
-                  onClick={handleDownloadExcel}
-                  className="flex-1 group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-[#0f1f3d] to-[#162847] text-white rounded-xl shadow-[0_4px_16px_rgba(15,31,61,0.2)] hover:shadow-[0_6px_24px_rgba(0,201,167,0.2)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
-                >
-                  <span className="absolute inset-0 bg-gradient-to-r from-[#00c9a7]/0 via-[#00c9a7]/10 to-[#00c9a7]/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                  <svg className="relative w-5 h-5" viewBox="0 0 24 24" fill="none">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#00c9a7" strokeWidth="1.5" strokeLinejoin="round"/>
-                    <polyline points="14 2 14 8 20 8" stroke="#00c9a7" strokeWidth="1.5" strokeLinejoin="round"/>
-                    <path d="M8 13h8M8 17h5" stroke="#00c9a7" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
-                  <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Download Excel</span>
-                </button>
-                
-                <button
-                  onClick={handleDownloadPDF}
-                  className="flex-1 group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-[#00a98c] to-[#00c9a7] text-white rounded-xl shadow-[0_4px_16px_rgba(0,201,167,0.2)] hover:shadow-[0_6px_24px_rgba(0,201,167,0.3)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
-                >
-                  <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                  <svg className="relative w-5 h-5" viewBox="0 0 24 24" fill="none">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
-                    <polyline points="14 2 14 8 20 8" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
-                    <path d="M9 13h6M9 17h6" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
-                  <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Download PDF</span>
-                </button>
+            <div className="bg-sky-50 border-t border-[#00c9a7]/20 px-8 py-5 flex-shrink-0">
+              {/* 2 rows of buttons */}
+              <div className="flex flex-col gap-3">
+                {/* Row 1: Edit and Delete */}
+                <div className="flex flex-col md:flex-row gap-3">
+                  <button
+                    onClick={handleEditClick}
+                    className="flex-1 group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl shadow-[0_4px_16px_rgba(37,99,235,0.2)] hover:shadow-[0_6px_24px_rgba(37,99,235,0.3)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
+                  >
+                    <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                    <svg className="relative w-5 h-5" viewBox="0 0 24 24" fill="none">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Edit Data</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setShowSingleDeleteModal(true)}
+                    className="flex-1 group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-rose-600 to-rose-700 text-white rounded-xl shadow-[0_4px_16px_rgba(225,29,72,0.2)] hover:shadow-[0_6px_24px_rgba(225,29,72,0.3)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
+                  >
+                    <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                    <svg className="relative w-5 h-5" viewBox="0 0 24 24" fill="none">
+                      <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M10 11v6M14 11v6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Delete Data</span>
+                  </button>
+                </div>
+
+                {/* Row 2: Download Excel and Download PDF */}
+                <div className="flex flex-col md:flex-row gap-3">
+                  <button
+                    onClick={handleDownloadExcel}
+                    className="flex-1 group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-[#0f1f3d] to-[#162847] text-white rounded-xl shadow-[0_4px_16px_rgba(15,31,61,0.2)] hover:shadow-[0_6px_24px_rgba(0,201,167,0.2)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
+                  >
+                    <span className="absolute inset-0 bg-gradient-to-r from-[#00c9a7]/0 via-[#00c9a7]/10 to-[#00c9a7]/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                    <svg className="relative w-5 h-5" viewBox="0 0 24 24" fill="none">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#00c9a7" strokeWidth="1.5" strokeLinejoin="round"/>
+                      <polyline points="14 2 14 8 20 8" stroke="#00c9a7" strokeWidth="1.5" strokeLinejoin="round"/>
+                      <path d="M8 13h8M8 17h5" stroke="#00c9a7" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                    <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Download Excel</span>
+                  </button>
+                  
+                  <button
+                    onClick={handleDownloadPDF}
+                    className="flex-1 group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-[#00a98c] to-[#00c9a7] text-white rounded-xl shadow-[0_4px_16px_rgba(0,201,167,0.2)] hover:shadow-[0_6px_24px_rgba(0,201,167,0.3)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
+                  >
+                    <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                    <svg className="relative w-5 h-5" viewBox="0 0 24 24" fill="none">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
+                      <polyline points="14 2 14 8 20 8" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
+                      <path d="M9 13h6M9 17h6" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                    <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Download PDF</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1049,6 +1092,98 @@ const ManageExamData = () => {
                         <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                       <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Delete All</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Single Delete Confirmation Modal */}
+      {showSingleDeleteModal && selectedExamData && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.3)] max-w-md w-full overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-rose-600 to-rose-700 px-8 py-6 border-b border-rose-500/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 9v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <h2 className="text-[22px] font-bold text-white font-[Syne,sans-serif]">
+                    Confirm Delete
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setShowSingleDeleteModal(false)}
+                  disabled={deleting}
+                  className="w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-8">
+              <div className="mb-6">
+                <p className="text-[#1a2e4a] text-base font-semibold mb-3 font-[Syne,sans-serif]">
+                  Are you sure you want to delete exam data for:
+                </p>
+                <div className="bg-sky-50 border border-[#00c9a7]/30 rounded-lg p-4 mb-4">
+                  <p className="text-sm font-bold text-[#1a2e4a] font-[Syne,sans-serif]">{selectedExamData.subjectName}</p>
+                  <p className="text-xs text-[#6b85a3] mt-1 font-[DM_Sans,sans-serif]">{selectedExamData.subjectCode} • Semester {selectedExamData.semester}</p>
+                </div>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <div className="flex items-start gap-2">
+                    <svg className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 9v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <div>
+                      <p className="text-sm font-bold text-amber-900 mb-1 font-[Syne,sans-serif]">Warning</p>
+                      <p className="text-xs text-amber-800 font-[DM_Sans,sans-serif]">
+                        This will permanently delete all exam data including internal and external examiner details for this subject. This action cannot be undone.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowSingleDeleteModal(false)}
+                  disabled={deleting}
+                  className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl text-[14px] font-bold font-[Syne,sans-serif] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteSingleExamData}
+                  disabled={deleting}
+                  className="flex-1 group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-rose-600 to-rose-700 text-white rounded-xl shadow-[0_4px_16px_rgba(225,29,72,0.2)] hover:shadow-[0_6px_24px_rgba(225,29,72,0.3)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                >
+                  <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                  {deleting ? (
+                    <>
+                      <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="3"/>
+                        <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                      </svg>
+                      <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Deleting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="relative w-5 h-5" viewBox="0 0 24 24" fill="none">
+                        <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Delete</span>
                     </>
                   )}
                 </button>
