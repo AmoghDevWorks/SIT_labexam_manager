@@ -20,6 +20,16 @@ const inputBase =
 
 const Input = (props) => <input className={inputBase} {...props} />;
 
+const guardNumberStep = (e) => {
+  if (e.type === "wheel") {
+    e.currentTarget.blur();
+    return;
+  }
+  if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+    e.preventDefault();
+  }
+};
+
 const Select = ({ children, ...props }) => (
   <select
     className={`${inputBase} cursor-pointer appearance-none bg-[url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2300c9a7' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")] bg-no-repeat bg-[right_14px_center]`}
@@ -294,7 +304,9 @@ const ExternalExaminerCard = ({ index, data, onChange, subjectId, disabled }) =>
           <Label required>Years of Experience</Label>
           <Input 
             type="number" 
-            min="0"
+            min="3"
+            step="1"
+            inputMode="numeric"
             placeholder="e.g. 10" 
             value={data.yearsOfExperience} 
             onChange={(e) => {
@@ -303,6 +315,8 @@ const ExternalExaminerCard = ({ index, data, onChange, subjectId, disabled }) =>
                 field("yearsOfExperience")(value);
               }
             }}
+            onWheel={guardNumberStep}
+            onKeyDown={guardNumberStep}
             className={`${inputBase} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
             required 
             disabled={disabled}
@@ -786,12 +800,16 @@ const Subject = ({ index, onChange }) => {
               <Input
                 type="number"
                 min="0"
+                step="1"
+                inputMode="numeric"
                 placeholder="e.g. 60"
                 value={studentsEnrolled}
                 onChange={(e) => {
                   const v = e.target.value;
                   if (v === "" || /^\d+$/.test(v)) setStudentsEnrolled(v);
                 }}
+                onWheel={guardNumberStep}
+                onKeyDown={guardNumberStep}
                 className={`${inputBase} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                 required
                 disabled={isDataLocked || !selectedSemester || !subjectCode}
