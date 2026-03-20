@@ -239,18 +239,152 @@ export const downloadExcel = (subjectsData, subjectCount, title = 'Panel of Exam
     alert(`Please fill all required fields:\n\n${errors.join('\n')}`);
     return;
   }
-
-  const subjectList = getSubjectList(subjectsData, subjectCount);
+  
   const wb = XLSX.utils.book_new();
-  const usedNames = new Set();
+  const wsData = [];
 
-  subjectList.forEach((subject, index) => {
-    const ws = createSubjectSheet(subject, title);
-    const subjectCode = subject.subjectCode || `Subject_${index + 1}`;
-    const sheetName = getUniqueSheetName(subjectCode, usedNames);
-    XLSX.utils.book_append_sheet(wb, ws, sheetName);
-  });
+  // Title row
+  wsData.push([
+    title,
+    "", "", "", "", "", "", "", "", "", ""
+  ]);
 
+  // Subtitle row - "External Examiner" should only appear above the external examiner columns
+  wsData.push([
+    "", "", "", "", "", "",
+    "External Examiner",
+    "", "", "", ""
+  ]);
+
+  // Header row
+  wsData.push([
+    "Sl No",
+    "Subject",
+    "Subject Code",
+    "Semester",
+    "Number of Students",
+    "Internal Examiner",
+    "Name",
+    "Address",
+    "Contact Number",
+    "Email ID",
+    "Permission to use already existing Question Paper with same code (Yes / No)",
+  ]);
+
+  let slNo = 1;
+
+  for (let i = 0; i < subjectCount; i++) {
+    const d = subjectsData[i] || {};
+    const internals = d.internals || [];
+    const externals = d.externals || [];
+
+    const maxRows = Math.max(externals.length, internals.length, 1);
+
+    for (let r = 0; r < maxRows; r++) {
+      const ext = externals[r] || {};
+      const int = internals[r] || {};
+      const isFirstRow = r === 0;
+
+      wsData.push([
+        isFirstRow ? slNo : "",
+        isFirstRow ? (d.subjectName || "") : "",
+        isFirstRow ? (d.subjectCode || "") : "",
+        isFirstRow ? (d.semester ? `Semester ${d.semester}` : "") : "",
+        isFirstRow ? (d.studentsEnrolled || "") : "",
+        int.name || "",
+        ext.name || "",
+        ext.address || "",
+        ext.contact || "",
+        ext.email || "",
+        isFirstRow ? (d.verification || "") : "",
+      ]);
+    }
+
+    slNo++;
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Column widths
+  ws["!cols"] = [
+    { wch: 8 },
+    { wch: 24 },
+    { wch: 16 },
+    { wch: 12 },
+    { wch: 20 },
+    { wch: 28 },
+    { wch: 24 },
+    { wch: 30 },
+    { wch: 18 },
+    { wch: 26 },
+    { wch: 38 },
+  ];
+
+  // Merge cells array
+  const merges = [];
+  
+  // Merge title row across all 11 columns (A1:K1)
+  merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: 10 } });
+  
+  // Merge "External Examiner" subtitle across columns 6-10 (G2:K2)
+  merges.push({ s: { r: 1, c: 6 }, e: { r: 1, c: 10 } });
+
+  // Merge cells for each subject (for repeated rows)
+  let currentRow = 3; // Start after headers
+  for (let i = 0; i < subjectCount; i++) {
+    const d = subjectsData[i] || {};
+    const externals = d.externals || [];
+    const internals = d.internals || [];
+    const maxRows = Math.max(externals.length, internals.length, 1);
+
+    if (maxRows > 1) {
+      // Merge Sl. No. (column 0)
+      merges.push({ s: { r: currentRow, c: 0 }, e: { r: currentRow + maxRows - 1, c: 0 } });
+      // Merge Subject (column 1)
+      merges.push({ s: { r: currentRow, c: 1 }, e: { r: currentRow + maxRows - 1, c: 1 } });
+      // Merge Sub Code (column 2)
+      merges.push({ s: { r: currentRow, c: 2 }, e: { r: currentRow + maxRows - 1, c: 2 } });
+      // Merge Semester (column 3)
+      merges.push({ s: { r: currentRow, c: 3 }, e: { r: currentRow + maxRows - 1, c: 3 } });
+      // Merge No. of Students (column 4)
+      merges.push({ s: { r: currentRow, c: 4 }, e: { r: currentRow + maxRows - 1, c: 4 } });
+      // DO NOT merge Internal Examiners (column 5) - each row has its own internal examiner
+    }
+    currentRow += maxRows;
+  }
+
+  ws["!merges"] = merges;
+
+  // Apply center alignment and borders to all cells
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let R = range.s.r; R <= range.e.r; ++R) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+      
+      // Create cell if it doesn't exist
+      if (!ws[cellAddress]) {
+        ws[cellAddress] = { t: 's', v: '' };
+      }
+
+      ws[cellAddress].s = {
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+          wrapText: true
+        },
+        border: {
+          top: { style: "thin", color: { rgb: "000000" } },
+          bottom: { style: "thin", color: { rgb: "000000" } },
+          left: { style: "thin", color: { rgb: "000000" } },
+          right: { style: "thin", color: { rgb: "000000" } }
+        },
+        font: R === 0 || R === 1 ? { bold: true, sz: 15 } : R === 2 ? { bold: true, sz: 13 } : { sz: 12 }
+      };
+    }
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, "Panel of Examiners");
+  const subjectList = getSubjectList(subjectsData, subjectCount);
   const filename = getExportFilename({ extension: 'xlsx', subjectList });
   XLSX.writeFile(wb, filename);
 };
@@ -267,15 +401,149 @@ export const downloadExcelWithUnfilled = (subjectsData, subjectCount, unfilledSu
 
   const subjectList = getSubjectList(subjectsData, subjectCount);
   const wb = XLSX.utils.book_new();
+  const wsData = [];
 
-  const usedNames = new Set();
+  // Title row
+  wsData.push([
+    title,
+    "", "", "", "", "", "", "", "", "", ""
+  ]);
 
-  subjectList.forEach((subject, index) => {
-    const ws = createSubjectSheet(subject, title);
-    const subjectCode = subject.subjectCode || `Subject_${index + 1}`;
-    const sheetName = getUniqueSheetName(subjectCode, usedNames);
-    XLSX.utils.book_append_sheet(wb, ws, sheetName);
-  });
+  // Subtitle row - "External Examiner" should only appear above the external examiner columns
+  wsData.push([
+    "", "", "", "", "", "",
+    "External Examiner",
+    "", "", "", ""
+  ]);
+
+  // Header row
+  wsData.push([
+    "Sl No",
+    "Subject",
+    "Subject Code",
+    "Semester",
+    "Number of Students",
+    "Internal Examiner",
+    "Name",
+    "Address",
+    "Contact Number",
+    "Email ID",
+    "Permission to use already existing Question Paper with same code (Yes / No)",
+  ]);
+
+  let slNo = 1;
+
+  for (let i = 0; i < subjectCount; i++) {
+    const d = subjectsData[i] || {};
+    const internals = d.internals || [];
+    const externals = d.externals || [];
+
+    const maxRows = Math.max(externals.length, internals.length, 1);
+
+    for (let r = 0; r < maxRows; r++) {
+      const ext = externals[r] || {};
+      const int = internals[r] || {};
+      const isFirstRow = r === 0;
+
+      wsData.push([
+        isFirstRow ? slNo : "",
+        isFirstRow ? (d.subjectName || "") : "",
+        isFirstRow ? (d.subjectCode || "") : "",
+        isFirstRow ? (d.semester ? `Semester ${d.semester}` : "") : "",
+        isFirstRow ? (d.studentsEnrolled || "") : "",
+        int.name || "",
+        ext.name || "",
+        ext.address || "",
+        ext.contact || "",
+        ext.email || "",
+        isFirstRow ? (d.verification || "") : "",
+      ]);
+    }
+
+    slNo++;
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Column widths
+  ws["!cols"] = [
+    { wch: 8 },
+    { wch: 24 },
+    { wch: 16 },
+    { wch: 12 },
+    { wch: 20 },
+    { wch: 28 },
+    { wch: 24 },
+    { wch: 30 },
+    { wch: 18 },
+    { wch: 26 },
+    { wch: 38 },
+  ];
+
+  // Merge cells array
+  const merges = [];
+  
+  // Merge title row across all 11 columns (A1:K1)
+  merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: 10 } });
+  
+  // Merge "External Examiner" subtitle across columns 6-10 (G2:K2)
+  merges.push({ s: { r: 1, c: 6 }, e: { r: 1, c: 10 } });
+
+  // Merge cells for each subject (for repeated rows)
+  let currentRow = 3; // Start after headers
+  for (let i = 0; i < subjectCount; i++) {
+    const d = subjectsData[i] || {};
+    const externals = d.externals || [];
+    const internals = d.internals || [];
+    const maxRows = Math.max(externals.length, internals.length, 1);
+
+    if (maxRows > 1) {
+      // Merge Sl. No. (column 0)
+      merges.push({ s: { r: currentRow, c: 0 }, e: { r: currentRow + maxRows - 1, c: 0 } });
+      // Merge Subject (column 1)
+      merges.push({ s: { r: currentRow, c: 1 }, e: { r: currentRow + maxRows - 1, c: 1 } });
+      // Merge Sub Code (column 2)
+      merges.push({ s: { r: currentRow, c: 2 }, e: { r: currentRow + maxRows - 1, c: 2 } });
+      // Merge Semester (column 3)
+      merges.push({ s: { r: currentRow, c: 3 }, e: { r: currentRow + maxRows - 1, c: 3 } });
+      // Merge No. of Students (column 4)
+      merges.push({ s: { r: currentRow, c: 4 }, e: { r: currentRow + maxRows - 1, c: 4 } });
+      // DO NOT merge Internal Examiners (column 5) - each row has its own internal examiner
+    }
+    currentRow += maxRows;
+  }
+
+  ws["!merges"] = merges;
+
+  // Apply center alignment and borders to all cells
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let R = range.s.r; R <= range.e.r; ++R) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+      
+      // Create cell if it doesn't exist
+      if (!ws[cellAddress]) {
+        ws[cellAddress] = { t: 's', v: '' };
+      }
+
+      ws[cellAddress].s = {
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+          wrapText: true
+        },
+        border: {
+          top: { style: "thin", color: { rgb: "000000" } },
+          bottom: { style: "thin", color: { rgb: "000000" } },
+          left: { style: "thin", color: { rgb: "000000" } },
+          right: { style: "thin", color: { rgb: "000000" } }
+        },
+        font: R === 0 || R === 1 ? { bold: true, sz: 15 } : R === 2 ? { bold: true, sz: 13 } : { sz: 12 }
+      };
+    }
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, "Panel of Examiners");
 
   // ═══════════════════════════════════════════════════════════
   // SHEET 2: Unfilled Subjects
