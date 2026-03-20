@@ -411,6 +411,48 @@ const Subject = ({ index, onChange }) => {
     }, 4000);
   };
 
+  // Check for duplicate external examiner (by name + phone composite key)
+  const checkExternalExaminerDuplicate = async (name, contact) => {
+    if (!name || !contact || contact.length < 10) {
+      return null;
+    }
+
+    try {
+      const response = await axios.post(
+        `${BACKEND_URL}/api/exam-data/check-external-examiner/duplicate`,
+        { 
+          name, 
+          contact,
+          currentSemester: semester,
+          currentSubjectCode: subjectCode
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+
+      if (response.data.exists) {
+        return {
+          exists: true,
+          isSameSubject: response.data.isSameSubject,
+          examinerDetails: response.data.examinerDetails,
+          existingSubject: response.data.existingSubject,
+          message: response.data.message
+        };
+      }
+      return { exists: false };
+    } catch (error) {
+      console.error('Error checking duplicate examiner:', error);
+      return null;
+    }
+  };
+
+  // Duplicate examiner warning modal
+  const [duplicateWarning, setDuplicateWarning] = useState(null);
+  const [pendingExternalUpdate, setPendingExternalUpdate] = useState(null);
+
   // Fetch subjects and internal examiners on mount
   useEffect(() => {
     const fetchData = async () => {
@@ -555,8 +597,29 @@ const Subject = ({ index, onChange }) => {
   const updateInternal = useCallback((idx, key, val) =>
     setInternals((prev) => prev.map((e, i) => (i === idx ? { ...e, [key]: val } : e))), []);
 
-  const updateExternal = useCallback((idx, key, val) =>
-    setExternals((prev) => prev.map((e, i) => (i === idx ? { ...e, [key]: val } : e))), []);
+  const updateExternal = useCallback((idx, key, val) => {
+    // When updating external examiner, check for duplicates if name and contact are being set
+    if ((key === 'name' || key === 'contact') && val) {
+      const currentExternal = externals[idx];
+      const nameToCheck = key === 'name' ? val : currentExternal.name;
+      const contactToCheck = key === 'contact' ? val : currentExternal.contact;
+
+      // Only check if both name and contact are filled
+      if (nameToCheck && contactToCheck && contactToCheck.length === 10) {
+        checkExternalExaminerDuplicate(nameToCheck, contactToCheck).then(result => {
+          if (result && result.exists) {
+            // Show warning modal with existing examiner details
+            setDuplicateWarning(result);
+            setPendingExternalUpdate({ idx, key, val });
+            return; // Don't update yet
+          }
+        });
+      }
+    }
+
+    // Update the external examiner
+    setExternals((prev) => prev.map((e, i) => (i === idx ? { ...e, [key]: val } : e)));
+  }, [externals, checkExternalExaminerDuplicate]);
 
   // When subject code is selected, auto-fill subject name and semester
   const handleSubjectCodeChange = (code) => {
@@ -772,6 +835,13 @@ const Subject = ({ index, onChange }) => {
                   min={1} 
                   disabled={isDataLocked || !selectedSemester || !subjectCode} 
                 />
+                <CountStepper 
+                  label="External" 
+                  value={externalCount} 
+                  onChange={handleExternalCount} 
+                  min={1} 
+                  disabled={isDataLocked || !selectedSemester || !subjectCode} 
+                />
               </div>
             </div>
 
@@ -855,6 +925,174 @@ const Subject = ({ index, onChange }) => {
 
         </div>
       </div>
+
+      {/* Duplicate External Examiner Warning Modal */}
+      {duplicateWarning && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className={`bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.3)] max-w-md w-full overflow-hidden ${
+            duplicateWarning.isSameSubject 
+              ? 'border border-amber-200/50' 
+              : 'border border-red-200/50'
+          }`}>
+            {/* Modal Header */}
+            <div className={`px-8 py-6 border-b ${
+              duplicateWarning.isSameSubject
+                ? 'bg-gradient-to-r from-amber-600 to-amber-700 border-amber-500/20'
+                : 'bg-gradient-to-r from-red-600 to-red-700 border-red-500/20'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none">
+                      {duplicateWarning.isSameSubject ? (
+                        <path d="M12 9v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      ) : (
+                        <path d="M12 9v2m0 4v2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      )}
+                    </svg>
+                  </div>
+                  <h2 className="text-[22px] font-bold text-white font-[Syne,sans-serif]">
+                    {duplicateWarning.isSameSubject ? 'Duplicate Examiner' : 'Examiner Assigned'}
+                  </h2>
+                </div>
+                <button
+                  onClick={() => {
+                    setDuplicateWarning(null);
+                    setPendingExternalUpdate(null);
+                  }}
+                  className="w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center justify-center"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-8">
+              {/* Warning Message */}
+              <div className={`mb-6 border rounded-xl p-4 ${
+                duplicateWarning.isSameSubject
+                  ? 'bg-amber-50 border-amber-200'
+                  : 'bg-red-50 border-red-200'
+              }`}>
+                <div className="flex items-start gap-3">
+                  <svg className={`w-5 h-5 shrink-0 mt-0.5 ${
+                    duplicateWarning.isSameSubject
+                      ? 'text-amber-600'
+                      : 'text-red-600'
+                  }`} viewBox="0 0 24 24" fill="none">
+                    <path d="M12 9v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <div className="flex-1">
+                    <p className={`text-sm font-bold mb-1 font-[Syne,sans-serif] ${
+                      duplicateWarning.isSameSubject
+                        ? 'text-amber-900'
+                        : 'text-red-900'
+                    }`}>
+                      {duplicateWarning.isSameSubject ? 'Duplicate Found' : 'Already Assigned'}
+                    </p>
+                    <p className={`text-xs font-[DM_Sans,sans-serif] ${
+                      duplicateWarning.isSameSubject
+                        ? 'text-amber-800'
+                        : 'text-red-800'
+                    }`}>
+                      {duplicateWarning.message}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Examiner Details */}
+              {duplicateWarning.examinerDetails && (
+                <div className="mb-6 bg-sky-50 border border-[#00c9a7]/20 rounded-xl p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#6b85a3] mb-3 font-[Syne,sans-serif]">Examiner Details</p>
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase text-[#6b85a3] font-[Syne,sans-serif]">Name</p>
+                      <p className="text-sm font-semibold text-[#1a2e4a] font-[DM_Sans,sans-serif]">{duplicateWarning.examinerDetails.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase text-[#6b85a3] font-[Syne,sans-serif]">Phone</p>
+                      <p className="text-sm font-semibold text-[#1a2e4a] font-[DM_Sans,sans-serif]">{duplicateWarning.examinerDetails.contact}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase text-[#6b85a3] font-[Syne,sans-serif]">Email</p>
+                      <p className="text-sm font-semibold text-[#1a2e4a] font-[DM_Sans,sans-serif]">{duplicateWarning.examinerDetails.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase text-[#6b85a3] font-[Syne,sans-serif]">Experience</p>
+                      <p className="text-sm font-semibold text-[#1a2e4a] font-[DM_Sans,sans-serif]">{duplicateWarning.examinerDetails.yearsOfExperience} years</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Subject Info */}
+              {duplicateWarning.existingSubject && (
+                <div className={`mb-6 border rounded-xl p-4 ${
+                  duplicateWarning.isSameSubject
+                    ? 'bg-blue-50 border-blue-200'
+                    : 'bg-amber-50 border-amber-200'
+                }`}>
+                  <p className={`text-[10px] font-bold uppercase tracking-wider mb-3 font-[Syne,sans-serif] ${
+                    duplicateWarning.isSameSubject
+                      ? 'text-blue-900'
+                      : 'text-amber-900'
+                  }`}>
+                    {duplicateWarning.isSameSubject ? 'Current Subject' : 'Already Used For'}
+                  </p>
+                  <div className={`space-y-2 text-xs font-[DM_Sans,sans-serif] ${
+                    duplicateWarning.isSameSubject
+                      ? 'text-blue-800'
+                      : 'text-amber-800'
+                  }`}>
+                    <p><span className="font-semibold">Semester:</span> {duplicateWarning.existingSubject.semester}</p>
+                    <p><span className="font-semibold">Code:</span> {duplicateWarning.existingSubject.subjectCode}</p>
+                    <p><span className="font-semibold">Subject:</span> {duplicateWarning.existingSubject.subjectName}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Actions */}
+            <div className="px-8 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
+              <button
+                onClick={() => {
+                  setDuplicateWarning(null);
+                  setPendingExternalUpdate(null);
+                }}
+                className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl text-[14px] font-bold font-[Syne,sans-serif] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (pendingExternalUpdate) {
+                    const { idx, key, val } = pendingExternalUpdate;
+                    setExternals((prev) => prev.map((e, i) => (i === idx ? { ...e, [key]: val } : e)));
+                  }
+                  const toastMessage = duplicateWarning.isSameSubject
+                    ? 'Examiner added (duplicate in same subject)'
+                    : 'Examiner added (reused from different subject)';
+                  showToast(toastMessage, 'success');
+                  setDuplicateWarning(null);
+                  setPendingExternalUpdate(null);
+                }}
+                className={`flex-1 group relative flex items-center justify-center gap-2 px-6 py-3 text-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden ${
+                  duplicateWarning.isSameSubject
+                    ? 'bg-gradient-to-r from-amber-600 to-amber-700'
+                    : 'bg-gradient-to-r from-red-600 to-red-700'
+                }`}
+              >
+                <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                <span className="relative text-[14px] font-bold font-[Syne,sans-serif]">Proceed Anyway</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notifications */}
       <div className="fixed bottom-6 right-6 z-[60] flex flex-col gap-3 pointer-events-none">

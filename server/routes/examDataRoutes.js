@@ -9,12 +9,16 @@ const {
   getExamDataBySemesterAndSubject,
   updateExamData,
   deleteExamData,
-  checkExistingExamData
+  checkExistingExamData,
+  checkExternalExaminerDuplicate
 } = require('../controllers/examDataController');
 
 // All routes require authentication
 // Create new exam data - accessible by authenticated users (internal examiners)
 router.post('/', verifyToken, createExamData);
+
+// Check for external examiner duplicate
+router.post('/check-external-examiner/duplicate', verifyToken, checkExternalExaminerDuplicate);
 
 // Read operations - accessible by authenticated users
 router.get('/', verifyToken, getAllExamData);

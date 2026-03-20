@@ -174,6 +174,72 @@ const checkExistingExamData = async (req, res) => {
   }
 };
 
+// Check for duplicate external examiner (by name + phone composite key)
+const checkExternalExaminerDuplicate = async (req, res) => {
+  try {
+    const { name, contact, currentSemester, currentSubjectCode } = req.body;
+
+    // Validate inputs
+    if (!name || !contact) {
+      return res.status(400).json({ 
+        message: 'Examiner name and contact number are required' 
+      });
+    }
+
+    // Normalize inputs for comparison
+    const normalizedName = name.trim().toLowerCase();
+    const normalizedContact = contact.trim();
+
+    // Search for existing external examiner with same name and contact
+    const existingExamData = await ExamData.findOne({
+      'externals': {
+        $elemMatch: {
+          name: { $regex: `^${normalizedName}$`, $options: 'i' },
+          contact: normalizedContact
+        }
+      }
+    });
+
+    if (existingExamData) {
+      // Find the matching examiner details
+      const matchingExaminer = existingExamData.externals.find(
+        ext => ext.name.toLowerCase() === normalizedName && ext.contact === normalizedContact
+      );
+
+      // Check if it's the same subject or different subject
+      const isSameSubject = 
+        existingExamData.semester === currentSemester && 
+        existingExamData.subjectCode === currentSubjectCode;
+
+      return res.status(200).json({
+        exists: true,
+        isSameSubject: isSameSubject,
+        message: isSameSubject 
+          ? 'External examiner with this name and phone number already exists for this subject'
+          : 'External examiner with this name and phone number is already assigned to a different subject',
+        examinerDetails: matchingExaminer,
+        existingSubject: {
+          semester: existingExamData.semester,
+          subjectCode: existingExamData.subjectCode,
+          subjectName: existingExamData.subjectName
+        }
+      });
+    } else {
+      // No duplicate found
+      return res.status(200).json({
+        exists: false,
+        message: 'External examiner is unique'
+      });
+    }
+  } catch (error) {
+    console.error('Error checking external examiner duplicate:', error);
+    res.status(500).json({ 
+      message: 'Error checking external examiner duplicate', 
+      error: error.message 
+    });
+  }
+};
+
 module.exports = {
   createExamData,
   getAllExamData,
@@ -182,5 +248,6 @@ module.exports = {
   getExamDataBySemesterAndSubject,
   updateExamData,
   deleteExamData,
-  checkExistingExamData
+  checkExistingExamData,
+  checkExternalExaminerDuplicate
 };
