@@ -66,6 +66,170 @@ export const validateData = (subjectsData, subjectCount) => {
   return errors;
 };
 
+const getSubjectList = (subjectsData, subjectCount) => {
+  const list = [];
+  for (let i = 0; i < subjectCount; i++) {
+    list.push(subjectsData[i] || {});
+  }
+  return list;
+};
+
+const sanitizeFilePart = (value, fallback = 'POE') => {
+  const cleaned = String(value || '')
+    .replace(/[<>:"/\\|?*]/g, '')
+    .trim();
+  return cleaned || fallback;
+};
+
+const getExportFilename = ({ extension, subjectList, explicitSemester }) => {
+  const isSingle = (subjectList || []).length === 1;
+
+  if (isSingle) {
+    const subjectCode = sanitizeFilePart(subjectList[0]?.subjectCode, 'Subject');
+    return `${subjectCode}-POE.${extension}`;
+  }
+
+  const semesterFromData = subjectList?.[0]?.semester;
+  const semesterValue = sanitizeFilePart(explicitSemester || semesterFromData, 'X');
+  return `Semester-${semesterValue}-POE.${extension}`;
+};
+
+const getUniqueSheetName = (baseName, usedNames) => {
+  const sanitizedBase = (baseName || 'Subject')
+    .replace(/[\\/?*\[\]:]/g, ' ')
+    .trim()
+    .slice(0, 31) || 'Subject';
+
+  if (!usedNames.has(sanitizedBase)) {
+    usedNames.add(sanitizedBase);
+    return sanitizedBase;
+  }
+
+  let counter = 2;
+  while (counter < 1000) {
+    const suffix = ` (${counter})`;
+    const maxBaseLength = 31 - suffix.length;
+    const candidate = `${sanitizedBase.slice(0, maxBaseLength)}${suffix}`;
+    if (!usedNames.has(candidate)) {
+      usedNames.add(candidate);
+      return candidate;
+    }
+    counter++;
+  }
+
+  const fallback = `Subject_${Date.now()}`.slice(0, 31);
+  usedNames.add(fallback);
+  return fallback;
+};
+
+const createSubjectSheet = (subject, title) => {
+  const wsData = [];
+  const d = subject || {};
+  const internals = d.internals || [];
+  const externals = d.externals || [];
+  const maxRows = Math.max(externals.length, internals.length, 1);
+
+  wsData.push([title, '', '', '', '', '', '', '', '', '', '']);
+  wsData.push(['', '', '', '', '', '', 'External Examiner', '', '', '', '']);
+  wsData.push([
+    'Sl No',
+    'Subject',
+    'Subject Code',
+    'Semester',
+    'Number of Students',
+    'Internal Examiner',
+    'Name',
+    'Address',
+    'Contact Number',
+    'Email ID',
+    'Permission to use already existing Question Paper with same code (Yes / No)',
+  ]);
+
+  for (let r = 0; r < maxRows; r++) {
+    const ext = externals[r] || {};
+    const int = internals[r] || {};
+    const isFirstRow = r === 0;
+
+    wsData.push([
+      isFirstRow ? 1 : '',
+      isFirstRow ? (d.subjectName || '') : '',
+      isFirstRow ? (d.subjectCode || '') : '',
+      isFirstRow ? (d.semester ? `Semester ${d.semester}` : '') : '',
+      isFirstRow ? (d.studentsEnrolled || '') : '',
+      int.name || '',
+      ext.name || '',
+      ext.address || '',
+      ext.contact || '',
+      ext.email || '',
+      isFirstRow ? (d.verification || '') : '',
+    ]);
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  ws['!cols'] = [
+    { wch: 8 },
+    { wch: 24 },
+    { wch: 16 },
+    { wch: 12 },
+    { wch: 20 },
+    { wch: 28 },
+    { wch: 24 },
+    { wch: 30 },
+    { wch: 18 },
+    { wch: 26 },
+    { wch: 38 },
+  ];
+
+  const merges = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } },
+    { s: { r: 1, c: 6 }, e: { r: 1, c: 10 } },
+  ];
+
+  if (maxRows > 1) {
+    merges.push({ s: { r: 3, c: 0 }, e: { r: 3 + maxRows - 1, c: 0 } });
+    merges.push({ s: { r: 3, c: 1 }, e: { r: 3 + maxRows - 1, c: 1 } });
+    merges.push({ s: { r: 3, c: 2 }, e: { r: 3 + maxRows - 1, c: 2 } });
+    merges.push({ s: { r: 3, c: 3 }, e: { r: 3 + maxRows - 1, c: 3 } });
+    merges.push({ s: { r: 3, c: 4 }, e: { r: 3 + maxRows - 1, c: 4 } });
+    merges.push({ s: { r: 3, c: 10 }, e: { r: 3 + maxRows - 1, c: 10 } });
+  }
+
+  ws['!merges'] = merges;
+
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let R = range.s.r; R <= range.e.r; ++R) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+      if (!ws[cellAddress]) {
+        ws[cellAddress] = { t: 's', v: '' };
+      }
+
+      ws[cellAddress].s = {
+        alignment: {
+          horizontal: 'center',
+          vertical: 'center',
+          wrapText: true,
+        },
+        border: {
+          top: { style: 'thin', color: { rgb: '000000' } },
+          bottom: { style: 'thin', color: { rgb: '000000' } },
+          left: { style: 'thin', color: { rgb: '000000' } },
+          right: { style: 'thin', color: { rgb: '000000' } },
+        },
+        font:
+          R === 0 || R === 1
+            ? { bold: true, sz: 15 }
+            : R === 2
+              ? { bold: true, sz: 13 }
+              : { sz: 12 },
+      };
+    }
+  }
+
+  return ws;
+};
+
 // ── Excel Export ──────────────────────────────────────────
 export const downloadExcel = (subjectsData, subjectCount, title = 'Panel of Examiners for ODD Semester (2025-2026) - December 2025 - January 2026') => {
   const errors = validateData(subjectsData, subjectCount);
@@ -75,152 +239,20 @@ export const downloadExcel = (subjectsData, subjectCount, title = 'Panel of Exam
     alert(`Please fill all required fields:\n\n${errors.join('\n')}`);
     return;
   }
-  
+
+  const subjectList = getSubjectList(subjectsData, subjectCount);
   const wb = XLSX.utils.book_new();
-  const wsData = [];
+  const usedNames = new Set();
 
-  // Title row
-  wsData.push([
-    title,
-    "", "", "", "", "", "", "", "", "", ""
-  ]);
+  subjectList.forEach((subject, index) => {
+    const ws = createSubjectSheet(subject, title);
+    const subjectCode = subject.subjectCode || `Subject_${index + 1}`;
+    const sheetName = getUniqueSheetName(subjectCode, usedNames);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  });
 
-  // Subtitle row - "External Examiner" should only appear above the external examiner columns
-  wsData.push([
-    "", "", "", "", "", "",
-    "External Examiner",
-    "", "", "", ""
-  ]);
-
-  // Header row
-  wsData.push([
-    "Sl No",
-    "Subject",
-    "Subject Code",
-    "Semester",
-    "Number of Students",
-    "Internal Examiner",
-    "Name",
-    "Address",
-    "Contact Number",
-    "Email ID",
-    "Permission to use already existing Question Paper with same code (Yes / No)",
-  ]);
-
-  let slNo = 1;
-
-  for (let i = 0; i < subjectCount; i++) {
-    const d = subjectsData[i] || {};
-    const internals = d.internals || [];
-    const externals = d.externals || [];
-
-    const maxRows = Math.max(externals.length, internals.length, 1);
-
-    for (let r = 0; r < maxRows; r++) {
-      const ext = externals[r] || {};
-      const int = internals[r] || {};
-      const isFirstRow = r === 0;
-
-      wsData.push([
-        isFirstRow ? slNo : "",
-        isFirstRow ? (d.subjectName || "") : "",
-        isFirstRow ? (d.subjectCode || "") : "",
-        isFirstRow ? (d.semester ? `Semester ${d.semester}` : "") : "",
-        isFirstRow ? (d.studentsEnrolled || "") : "",
-        int.name || "",
-        ext.name || "",
-        ext.address || "",
-        ext.contact || "",
-        ext.email || "",
-        isFirstRow ? (d.verification || "") : "",
-      ]);
-    }
-
-    slNo++;
-  }
-
-  const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-  // Column widths
-  ws["!cols"] = [
-    { wch: 8 },
-    { wch: 12 },
-    { wch: 14 },
-    { wch: 12 },
-    { wch: 20 },
-    { wch: 28 },
-    { wch: 12 },
-    { wch: 12 },
-    { wch: 18 },
-    { wch: 12 },
-    { wch: 38 },
-  ];
-
-  // Merge cells array
-  const merges = [];
-  
-  // Merge title row across all 11 columns (A1:K1)
-  merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: 10 } });
-  
-  // Merge "External Examiner" subtitle across columns 6-10 (G2:K2) - Name, Address, Contact, Email, Permission
-  merges.push({ s: { r: 1, c: 6 }, e: { r: 1, c: 10 } });
-
-  // Merge cells for each subject (for repeated rows)
-  let currentRow = 3; // Start after headers
-  for (let i = 0; i < subjectCount; i++) {
-    const d = subjectsData[i] || {};
-    const externals = d.externals || [];
-    const internals = d.internals || [];
-    const maxRows = Math.max(externals.length, internals.length, 1);
-
-    if (maxRows > 1) {
-      // Merge Sl. No. (column 0)
-      merges.push({ s: { r: currentRow, c: 0 }, e: { r: currentRow + maxRows - 1, c: 0 } });
-      // Merge Subject (column 1)
-      merges.push({ s: { r: currentRow, c: 1 }, e: { r: currentRow + maxRows - 1, c: 1 } });
-      // Merge Sub Code (column 2)
-      merges.push({ s: { r: currentRow, c: 2 }, e: { r: currentRow + maxRows - 1, c: 2 } });
-      // Merge Semester (column 3)
-      merges.push({ s: { r: currentRow, c: 3 }, e: { r: currentRow + maxRows - 1, c: 3 } });
-      // Merge No. of Students (column 4)
-      merges.push({ s: { r: currentRow, c: 4 }, e: { r: currentRow + maxRows - 1, c: 4 } });
-      // DO NOT merge Internal Examiners (column 5) - each row has its own internal examiner
-    }
-    currentRow += maxRows;
-  }
-
-  ws["!merges"] = merges;
-
-  // Apply center alignment and borders to all cells
-  const range = XLSX.utils.decode_range(ws['!ref']);
-  for (let R = range.s.r; R <= range.e.r; ++R) {
-    for (let C = range.s.c; C <= range.e.c; ++C) {
-      const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
-      
-      // Create cell if it doesn't exist
-      if (!ws[cellAddress]) {
-        ws[cellAddress] = { t: 's', v: '' };
-      }
-
-      ws[cellAddress].s = {
-        alignment: {
-          horizontal: "center",
-          vertical: "center",
-          wrapText: true
-        },
-        border: {
-          top: { style: "thin", color: { rgb: "000000" } },
-          bottom: { style: "thin", color: { rgb: "000000" } },
-          left: { style: "thin", color: { rgb: "000000" } },
-          right: { style: "thin", color: { rgb: "000000" } }
-        },
-        font: R === 0 || R === 1 ? { bold: true, sz: 12 } : R === 2 ? { bold: true } : {}
-      };
-    }
-  }
-
-  XLSX.utils.book_append_sheet(wb, ws, "Panel of Examiners");
-  XLSX.writeFile(wb, "Panel_of_Examiners.xlsx");
+  const filename = getExportFilename({ extension: 'xlsx', subjectList });
+  XLSX.writeFile(wb, filename);
 };
 
 // ── Excel Export with Unfilled Subjects ──────────────────────────────────────────
@@ -232,155 +264,18 @@ export const downloadExcelWithUnfilled = (subjectsData, subjectCount, unfilledSu
     alert(`Please fill all required fields:\n\n${errors.join('\n')}`);
     return;
   }
-  
+
+  const subjectList = getSubjectList(subjectsData, subjectCount);
   const wb = XLSX.utils.book_new();
-  
-  // ═══════════════════════════════════════════════════════════
-  // SHEET 1: Panel of Examiners (Filled Data)
-  // ═══════════════════════════════════════════════════════════
-  const wsData = [];
 
-  // Title row
-  wsData.push([
-    title,
-    "", "", "", "", "", "", "", "", "", ""
-  ]);
+  const usedNames = new Set();
 
-  // Subtitle row - "External Examiner" should only appear above the external examiner columns
-  wsData.push([
-    "", "", "", "", "", "",
-    "External Examiner",
-    "", "", "", ""
-  ]);
-
-  // Header row
-  wsData.push([
-    "Sl No",
-    "Subject",
-    "Subject Code",
-    "Semester",
-    "Number of Students",
-    "Internal Examiner",
-    "Name",
-    "Address",
-    "Contact Number",
-    "Email ID",
-    "Permission to use already existing Question Paper with same code (Yes / No)",
-  ]);
-
-  let slNo = 1;
-
-  for (let i = 0; i < subjectCount; i++) {
-    const d = subjectsData[i] || {};
-    const internals = d.internals || [];
-    const externals = d.externals || [];
-
-    const maxRows = Math.max(externals.length, internals.length, 1);
-
-    for (let r = 0; r < maxRows; r++) {
-      const ext = externals[r] || {};
-      const int = internals[r] || {};
-      const isFirstRow = r === 0;
-
-      wsData.push([
-        isFirstRow ? slNo : "",
-        isFirstRow ? (d.subjectName || "") : "",
-        isFirstRow ? (d.subjectCode || "") : "",
-        isFirstRow ? (d.semester ? `Semester ${d.semester}` : "") : "",
-        isFirstRow ? (d.studentsEnrolled || "") : "",
-        int.name || "",
-        ext.name || "",
-        ext.address || "",
-        ext.contact || "",
-        ext.email || "",
-        isFirstRow ? (d.verification || "") : "",
-      ]);
-    }
-
-    slNo++;
-  }
-
-  const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-  // Column widths
-  ws["!cols"] = [
-    { wch: 8 },
-    { wch: 12 },
-    { wch: 14 },
-    { wch: 12 },
-    { wch: 20 },
-    { wch: 28 },
-    { wch: 12 },
-    { wch: 12 },
-    { wch: 18 },
-    { wch: 12 },
-    { wch: 38 },
-  ];
-
-  // Merge cells array
-  const merges = [];
-  
-  // Merge title row across all 11 columns (A1:K1)
-  merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: 10 } });
-  
-  // Merge "External Examiner" subtitle across columns 6-10 (G2:K2) - Name, Address, Contact, Email, Permission
-  merges.push({ s: { r: 1, c: 6 }, e: { r: 1, c: 10 } });
-
-  // Merge cells for each subject (for repeated rows)
-  let currentRow = 3; // Start after headers
-  for (let i = 0; i < subjectCount; i++) {
-    const d = subjectsData[i] || {};
-    const externals = d.externals || [];
-    const internals = d.internals || [];
-    const maxRows = Math.max(externals.length, internals.length, 1);
-
-    if (maxRows > 1) {
-      // Merge Sl. No. (column 0)
-      merges.push({ s: { r: currentRow, c: 0 }, e: { r: currentRow + maxRows - 1, c: 0 } });
-      // Merge Subject (column 1)
-      merges.push({ s: { r: currentRow, c: 1 }, e: { r: currentRow + maxRows - 1, c: 1 } });
-      // Merge Sub Code (column 2)
-      merges.push({ s: { r: currentRow, c: 2 }, e: { r: currentRow + maxRows - 1, c: 2 } });
-      // Merge Semester (column 3)
-      merges.push({ s: { r: currentRow, c: 3 }, e: { r: currentRow + maxRows - 1, c: 3 } });
-      // Merge No. of Students (column 4)
-      merges.push({ s: { r: currentRow, c: 4 }, e: { r: currentRow + maxRows - 1, c: 4 } });
-      // DO NOT merge Internal Examiners (column 5) - each row has its own internal examiner
-    }
-    currentRow += maxRows;
-  }
-
-  ws["!merges"] = merges;
-
-  // Apply center alignment and borders to all cells
-  const range = XLSX.utils.decode_range(ws['!ref']);
-  for (let R = range.s.r; R <= range.e.r; ++R) {
-    for (let C = range.s.c; C <= range.e.c; ++C) {
-      const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
-      
-      // Create cell if it doesn't exist
-      if (!ws[cellAddress]) {
-        ws[cellAddress] = { t: 's', v: '' };
-      }
-
-      ws[cellAddress].s = {
-        alignment: {
-          horizontal: "center",
-          vertical: "center",
-          wrapText: true
-        },
-        border: {
-          top: { style: "thin", color: { rgb: "000000" } },
-          bottom: { style: "thin", color: { rgb: "000000" } },
-          left: { style: "thin", color: { rgb: "000000" } },
-          right: { style: "thin", color: { rgb: "000000" } }
-        },
-        font: R === 0 || R === 1 ? { bold: true, sz: 12 } : R === 2 ? { bold: true } : {}
-      };
-    }
-  }
-
-  XLSX.utils.book_append_sheet(wb, ws, "Panel of Examiners");
+  subjectList.forEach((subject, index) => {
+    const ws = createSubjectSheet(subject, title);
+    const subjectCode = subject.subjectCode || `Subject_${index + 1}`;
+    const sheetName = getUniqueSheetName(subjectCode, usedNames);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  });
 
   // ═══════════════════════════════════════════════════════════
   // SHEET 2: Unfilled Subjects
@@ -449,7 +344,7 @@ export const downloadExcelWithUnfilled = (subjectsData, subjectCount, unfilledSu
             left: { style: "thin", color: { rgb: "000000" } },
             right: { style: "thin", color: { rgb: "000000" } }
           },
-          font: R === 0 ? { bold: true, sz: 12, color: { rgb: "E11D48" } } : R === 1 ? { bold: true } : {},
+          font: R === 0 ? { bold: true, sz: 13, color: { rgb: "E11D48" } } : R === 1 ? { bold: true, sz: 12 } : { sz: 11 },
           fill: R === 0 ? { fgColor: { rgb: "FEE2E2" } } : R === 1 ? { fgColor: { rgb: "FECACA" } } : {}
         };
       }
@@ -463,8 +358,8 @@ export const downloadExcelWithUnfilled = (subjectsData, subjectCount, unfilledSu
   // ═══════════════════════════════════════════════════════════
   // Filter subjects where verification is "Yes"
   const verifiedSubjects = [];
-  for (let i = 0; i < subjectCount; i++) {
-    const d = subjectsData[i] || {};
+  for (let i = 0; i < subjectList.length; i++) {
+    const d = subjectList[i] || {};
     if (d.verification && d.verification.toLowerCase() === 'yes') {
       verifiedSubjects.push(d);
     }
@@ -540,12 +435,12 @@ export const downloadExcelWithUnfilled = (subjectsData, subjectCount, unfilledSu
             right: { style: "thin", color: { rgb: "000000" } }
           },
           font: R === 0 
-            ? { bold: true, sz: 12, color: { rgb: "1E40AF" } } 
+            ? { bold: true, sz: 13, color: { rgb: "1E40AF" } } 
             : R === 1 
-              ? { bold: true } 
+              ? { bold: true, sz: 12 } 
               : isNotProvided 
                 ? { italic: true, color: { rgb: "DC2626" } } 
-                : {},
+                : { sz: 11 },
           fill: R === 0 
             ? { fgColor: { rgb: "DBEAFE" } } 
             : R === 1 
@@ -560,7 +455,8 @@ export const downloadExcelWithUnfilled = (subjectsData, subjectCount, unfilledSu
     XLSX.utils.book_append_sheet(wb, wsVerified, "Verified Subjects");
   }
 
-  XLSX.writeFile(wb, `Panel_of_Examiners_Semester_${semester}.xlsx`);
+  const filename = getExportFilename({ extension: 'xlsx', subjectList, explicitSemester: semester });
+  XLSX.writeFile(wb, filename);
 };
 
 // ── PDF Export ──────────────────────────────────────────
@@ -573,6 +469,8 @@ export const downloadPDF = (subjectsData, subjectCount, title = 'Panel of Examin
       alert(`Please fill all required fields:\n\n${errors.join('\n')}`);
       return;
     }
+
+    const subjectList = getSubjectList(subjectsData, subjectCount);
 
     const doc = new jsPDF({
       orientation: 'landscape',
@@ -622,33 +520,57 @@ export const downloadPDF = (subjectsData, subjectCount, title = 'Panel of Examin
       const textSectionCenterX = dividerX + (pageWidth - rightMargin - dividerX) / 2;
       
       // Siddaganga Institute of Technology (centered)
-      doc.setFontSize(14);
+      doc.setFontSize(15);
       doc.setFont('helvetica', 'bold');
       doc.text('Siddaganga Institute of Technology', textSectionCenterX, 13, { align: 'center' });
       
       // Department of Computer Science and Engineering (centered)
-      doc.setFontSize(11);
+      doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.text('Department of Computer Science and Engineering', textSectionCenterX, 19, { align: 'center' });
       
       // Title (centered)
-      doc.setFontSize(10);
+      doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
       doc.text(title, textSectionCenterX, 25, { align: 'center' });
     };
     
-    // Draw header for first page
-    drawHeader();
+    const drawFooter = () => {
+      const footerY = pageHeight - 20;
 
-    // Prepare table data with rowSpan information
-    const tableData = [];
-    let slNo = 1;
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text('___________________', 15, footerY);
+      doc.setFontSize(8);
+      doc.text('Co-ordinator', 15, footerY + 4);
+      doc.text('BOE', 15, footerY + 8);
 
-    for (let i = 0; i < subjectCount; i++) {
-      const d = subjectsData[i] || {};
+      const today = new Date();
+      const dateStr = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
+      doc.setFontSize(9);
+      doc.text(`Date: ${dateStr}`, pageWidth / 2, footerY + 2, { align: 'center' });
+
+      doc.setFontSize(9);
+      doc.text('___________________', pageWidth - 50, footerY);
+      doc.setFontSize(8);
+      doc.text('Head of the Department', pageWidth - 50, footerY + 4);
+      doc.text('Dept. of CSE', pageWidth - 50, footerY + 8);
+
+      const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
+      const pageCount = doc.internal.getNumberOfPages();
+      doc.setFontSize(8);
+      doc.text(`Page ${currentPage} of ${pageCount}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
+    };
+
+    subjectList.forEach((d, subjectIndex) => {
+      if (subjectIndex > 0) {
+        doc.addPage();
+      }
+
       const internals = d.internals || [];
       const externals = d.externals || [];
       const maxRows = Math.max(externals.length, internals.length, 1);
+      const tableData = [];
 
       for (let r = 0; r < maxRows; r++) {
         const ext = externals[r] || {};
@@ -656,138 +578,94 @@ export const downloadPDF = (subjectsData, subjectCount, title = 'Panel of Examin
         const isFirstRow = r === 0;
 
         if (isFirstRow) {
-          // First row with rowSpan for merged cells
           tableData.push([
-            { content: String(slNo), rowSpan: maxRows, styles: { valign: 'middle', halign: 'center' } },
-            { content: d.subjectName || "", rowSpan: maxRows, styles: { valign: 'middle', halign: 'left' } },
-            { content: d.subjectCode || "", rowSpan: maxRows, styles: { valign: 'middle', halign: 'center' } },
-            { content: d.semester ? `Sem ${d.semester}` : "", rowSpan: maxRows, styles: { valign: 'middle', halign: 'center' } },
-            { content: String(d.studentsEnrolled || ""), rowSpan: maxRows, styles: { valign: 'middle', halign: 'center' } },
-            { content: int.name || "", styles: { halign: 'left' } },
-            { content: ext.name || "", styles: { halign: 'left' } },
-            { content: ext.address || "", styles: { halign: 'left' } },
-            { content: ext.contact || "", styles: { halign: 'center' } },
-            { content: ext.email || "", styles: { halign: 'left' } },
-            { content: d.verification || "", rowSpan: maxRows, styles: { valign: 'middle', halign: 'center' } },
+            { content: '1', rowSpan: maxRows, styles: { valign: 'middle', halign: 'center' } },
+            { content: d.subjectName || '', rowSpan: maxRows, styles: { valign: 'middle', halign: 'left' } },
+            { content: d.subjectCode || '', rowSpan: maxRows, styles: { valign: 'middle', halign: 'center' } },
+            { content: d.semester ? `Sem ${d.semester}` : '', rowSpan: maxRows, styles: { valign: 'middle', halign: 'center' } },
+            { content: String(d.studentsEnrolled || ''), rowSpan: maxRows, styles: { valign: 'middle', halign: 'center' } },
+            { content: int.name || '', styles: { halign: 'left' } },
+            { content: ext.name || '', styles: { halign: 'left' } },
+            { content: ext.address || '', styles: { halign: 'left' } },
+            { content: ext.contact || '', styles: { halign: 'center' } },
+            { content: ext.email || '', styles: { halign: 'left' } },
+            { content: d.verification || '', rowSpan: maxRows, styles: { valign: 'middle', halign: 'center' } },
           ]);
         } else {
-          // Subsequent rows - only examiner columns (verification is merged from first row)
           tableData.push([
-            { content: int.name || "", styles: { halign: 'left' } },
-            { content: ext.name || "", styles: { halign: 'left' } },
-            { content: ext.address || "", styles: { halign: 'left' } },
-            { content: ext.contact || "", styles: { halign: 'center' } },
-            { content: ext.email || "", styles: { halign: 'left' } },
+            { content: int.name || '', styles: { halign: 'left' } },
+            { content: ext.name || '', styles: { halign: 'left' } },
+            { content: ext.address || '', styles: { halign: 'left' } },
+            { content: ext.contact || '', styles: { halign: 'center' } },
+            { content: ext.email || '', styles: { halign: 'left' } },
           ]);
         }
       }
-      slNo++;
-    }
 
-    // Create table with autoTable
-    // Total available width = 297mm - margins (6mm left + 6mm right) = 285mm
-    autoTable(doc, {
-      head: [
-        [
-          { content: '', colSpan: 6, styles: { halign: 'center', fillColor: [255, 255, 255], textColor: [0, 0, 0], lineWidth: 0.1 } },
-          { content: 'External Examiner', colSpan: 4, styles: { halign: 'center', fillColor: [220, 230, 240], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.1 } },
-          { content: '', colSpan: 1, styles: { halign: 'center', fillColor: [255, 255, 255], textColor: [0, 0, 0], lineWidth: 0.1 } }
+      autoTable(doc, {
+        head: [
+          [
+            { content: '', colSpan: 6, styles: { halign: 'center', fillColor: [255, 255, 255], textColor: [0, 0, 0], lineWidth: 0.1 } },
+            { content: 'External Examiner', colSpan: 4, styles: { halign: 'center', fillColor: [220, 230, 240], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.1 } },
+            { content: '', colSpan: 1, styles: { halign: 'center', fillColor: [255, 255, 255], textColor: [0, 0, 0], lineWidth: 0.1 } }
+          ],
+          [
+            { content: 'Sl No', styles: { halign: 'center' } },
+            { content: 'Subject', styles: { halign: 'center' } },
+            { content: 'Subject Code', styles: { halign: 'center' } },
+            { content: 'Sem', styles: { halign: 'center' } },
+            { content: 'No. of Students', styles: { halign: 'center' } },
+            { content: 'Internal Examiner', styles: { halign: 'center' } },
+            { content: 'Name', styles: { halign: 'center' } },
+            { content: 'Address', styles: { halign: 'center' } },
+            { content: 'Contact No.', styles: { halign: 'center' } },
+            { content: 'Email ID', styles: { halign: 'center' } },
+            { content: 'Permission to use already existing Question Paper with same code (Yes / No)', styles: { halign: 'center' } }
+          ]
         ],
-        [
-          { content: 'Sl No', styles: { halign: 'center' } },
-          { content: 'Subject', styles: { halign: 'center' } },
-          { content: 'Subject Code', styles: { halign: 'center' } },
-          { content: 'Sem', styles: { halign: 'center' } },
-          { content: 'No. of Students', styles: { halign: 'center' } },
-          { content: 'Internal Examiner', styles: { halign: 'center' } },
-          { content: 'Name', styles: { halign: 'center' } },
-          { content: 'Address', styles: { halign: 'center' } },
-          { content: 'Contact No.', styles: { halign: 'center' } },
-          { content: 'Email ID', styles: { halign: 'center' } },
-          { content: 'Permission to use already existing Question Paper with same code (Yes / No)', styles: { halign: 'center' } }
-        ]
-      ],
-      body: tableData,
-      startY: 30,
-      theme: 'grid',
-      styles: {
-        fontSize: 6.5,
-        cellPadding: 1.2,
-        halign: 'center',
-        valign: 'middle',
-        lineColor: [0, 0, 0],
-        lineWidth: 0.1,
-        overflow: 'linebreak',
-      },
-      headStyles: {
-        fillColor: [15, 31, 61],
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-        halign: 'center',
-        fontSize: 6.5,
-        cellPadding: 1.5,
-      },
-      columnStyles: {
-        0: { cellWidth: 10, halign: 'center' },   // Sl No - 10mm
-        1: { cellWidth: 30, halign: 'left' },     // Subject - 30mm
-        2: { cellWidth: 18, halign: 'center' },   // Subject Code - 18mm
-        3: { cellWidth: 12, halign: 'center' },   // Semester - 12mm
-        4: { cellWidth: 15, halign: 'center' },   // Number of Students - 15mm
-        5: { cellWidth: 32, halign: 'left' },     // Internal Examiner - 32mm
-        6: { cellWidth: 32, halign: 'left' },     // External Name - 32mm
-        7: { cellWidth: 45, halign: 'left' },     // Address - 45mm
-        8: { cellWidth: 20, halign: 'center' },   // Contact - 20mm
-        9: { cellWidth: 38, halign: 'left' },     // Email - 38mm
-        10: { cellWidth: 23, halign: 'center' },  // Permission - 23mm
-      },
-      // Total: 10+30+18+12+15+32+32+45+20+38+23 = 275mm (fits in 285mm available)
-      margin: { top: 30, left: 6, right: 6, bottom: 30 },
-      didDrawPage: function(data) {
-        const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
-        
-        // Draw header on every page
-        if (currentPage > 1) {
+        body: tableData,
+        startY: 32,
+        theme: 'grid',
+        styles: {
+          fontSize: 8.4,
+          cellPadding: 1.4,
+          halign: 'center',
+          valign: 'middle',
+          lineColor: [0, 0, 0],
+          lineWidth: 0.1,
+          overflow: 'linebreak',
+        },
+        headStyles: {
+          fillColor: [15, 31, 61],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          halign: 'center',
+          fontSize: 8.8,
+          cellPadding: 1.6,
+        },
+        columnStyles: {
+          0: { cellWidth: 10, halign: 'center' },
+          1: { cellWidth: 28, halign: 'left' },
+          2: { cellWidth: 18, halign: 'center' },
+          3: { cellWidth: 12, halign: 'center' },
+          4: { cellWidth: 16, halign: 'center' },
+          5: { cellWidth: 32, halign: 'left' },
+          6: { cellWidth: 28, halign: 'left' },
+          7: { cellWidth: 40, halign: 'left' },
+          8: { cellWidth: 20, halign: 'center' },
+          9: { cellWidth: 34, halign: 'left' },
+          10: { cellWidth: 25, halign: 'center' },
+        },
+        margin: { top: 30, left: 6, right: 6, bottom: 30 },
+        didDrawPage: () => {
           drawHeader();
-        }
-        
-        // Footer section
-        const footerY = pageHeight - 20;
-        
-        // Co-ordinator BOE (Bottom Left)
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'normal');
-        doc.text('___________________', 15, footerY);
-        doc.setFontSize(8);
-        doc.text('Co-ordinator', 15, footerY + 4);
-        doc.text('BOE', 15, footerY + 8);
-        
-        // Current Date (Bottom Center)
-        const today = new Date();
-        const dateStr = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Date: ${dateStr}`, pageWidth / 2, footerY + 2, { align: 'center' });
-        
-        // Head of the Department (Bottom Right)
-        doc.setFontSize(9);
-        doc.text('___________________', pageWidth - 50, footerY);
-        doc.setFontSize(8);
-        doc.text('Head of the Department', pageWidth - 50, footerY + 4);
-        doc.text('Dept. of CSE', pageWidth - 50, footerY + 8);
-        
-        // Page number (very bottom)
-        const pageCount = doc.internal.getNumberOfPages();
-        doc.setFontSize(8);
-        doc.text(
-          `Page ${currentPage} of ${pageCount}`,
-          pageWidth / 2,
-          pageHeight - 5,
-          { align: 'center' }
-        );
-      }
+          drawFooter();
+        },
+      });
     });
 
-    doc.save('Panel_of_Examiners.pdf');
+    const filename = getExportFilename({ extension: 'pdf', subjectList });
+    doc.save(filename);
     console.log('PDF generated successfully');
   } catch (error) {
     console.error('Error generating PDF:', error);
