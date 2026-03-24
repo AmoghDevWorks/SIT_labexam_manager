@@ -234,10 +234,40 @@ const ManageExamData = () => {
     }
   };
 
+  // Delete uploaded subject documents (syllabus + model QP)
+  const deleteSubjectDocuments = async (semester, subjectCode) => {
+    const encodedSemester = encodeURIComponent(semester);
+    const encodedSubjectCode = encodeURIComponent(subjectCode);
+
+    const deleteRequests = [
+      axios.delete(`${BACKEND_URL}/api/documents/${encodedSemester}/${encodedSubjectCode}/syllabus`),
+      axios.delete(`${BACKEND_URL}/api/documents/${encodedSemester}/${encodedSubjectCode}/modelQP`),
+    ];
+
+    const results = await Promise.allSettled(deleteRequests);
+
+    // Ignore 404 (doc not present), but bubble up any other error.
+    results.forEach((result) => {
+      if (result.status === 'rejected') {
+        const status = result.reason?.response?.status;
+        if (status !== 404) {
+          throw result.reason;
+        }
+      }
+    });
+  };
+
   // Delete all exam data for semester
   const handleDeleteSemesterData = async () => {
     try {
       setDeleting(true);
+
+      // Delete docs and exam data for each subject in the semester
+      await Promise.all(
+        examData.map(data =>
+          deleteSubjectDocuments(data.semester, data.subjectCode)
+        )
+      );
 
       // Delete all exam data for the semester
       await Promise.all(
@@ -265,6 +295,8 @@ const ManageExamData = () => {
     
     try {
       setDeleting(true);
+
+      await deleteSubjectDocuments(selectedExamData.semester, selectedExamData.subjectCode);
 
       await axios.delete(`${BACKEND_URL}/api/exam-data/${selectedExamData._id}`);
       

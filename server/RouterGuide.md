@@ -33,9 +33,10 @@
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/internal-examiners` | Create a new internal examiner. `name` must be unique |
+| POST | `/api/internal-examiners/login` | Authenticate an internal examiner using username and password |
+| POST | `/api/internal-examiners` | Create a new internal examiner. `username` must be unique |
 | GET | `/api/internal-examiners` | Retrieve all internal examiners sorted by newest first |
-| PUT | `/api/internal-examiners/:id` | Update an internal examiner's name by its MongoDB ID. Prevents duplicate names |
+| PUT | `/api/internal-examiners/:id` | Update an internal examiner's username, name, and optional password by MongoDB ID |
 | DELETE | `/api/internal-examiners/:id` | Delete an internal examiner by its MongoDB ID |
 
 ---
@@ -45,7 +46,9 @@
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/api/exam-data` | Create new exam data for a single subject. Requires `semester`, `subjectName`, `subjectCode`, `studentsEnrolled`, `verification`, `internals`, and `externals` fields |
+| POST | `/api/exam-data/check-external-examiner/duplicate` | Check whether an external examiner (name + contact) is already used in existing exam data |
 | GET | `/api/exam-data` | Retrieve all exam data entries sorted by semester and subject name |
+| GET | `/api/exam-data/check/:semester/:subjectCode` | Check whether exam data already exists for a given semester and subject code |
 | GET | `/api/exam-data/:id` | Retrieve a single exam data entry by its MongoDB ID |
 | GET | `/api/exam-data/semester/:semester` | Retrieve all exam data entries for a specific semester, sorted by subject name |
 | GET | `/api/exam-data/semester/:semester/subject/:subjectName` | Retrieve exam data entries for a specific semester and subject combination |
@@ -75,3 +78,14 @@
 | PATCH | `/api/manage-subject-entry/toggle` | Toggle the `allowSubjectEntry` field between true and false |
 | PUT | `/api/manage-subject-entry` | Update subject entry configuration with a specific boolean value |
 | DELETE | `/api/manage-subject-entry` | Delete the subject entry configuration document |
+
+---
+
+## Document Routes — `/api/documents`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/documents/upload` | Upload a document (`syllabus` or `modelQP`) for a subject and semester |
+| GET | `/api/documents/check/:semester/:subjectCode` | Check existing uploaded documents for a subject in a semester |
+| GET | `/api/documents/:semester/:subjectCode/:documentType` | Download a specific document (`syllabus` or `modelQP`) |
+| DELETE | `/api/documents/:semester/:subjectCode/:documentType` | Delete a specific document (`syllabus` or `modelQP`) |

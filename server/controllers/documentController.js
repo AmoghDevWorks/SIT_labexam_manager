@@ -155,7 +155,8 @@ exports.deleteDocument = (req, res) => {
       return res.status(404).json({ message: "Document not found" });
     }
 
-    const file = files.find(f => f.startsWith(`${subjectCode}_${documentType}`));
+    // Match pattern: subjectCode-subjectName_documentType
+    const file = files.find(f => f.startsWith(`${subjectCode}-`) && f.includes(`_${documentType}`));
     
     if (!file) {
       return res.status(404).json({ message: "Document not found" });
@@ -167,6 +168,16 @@ exports.deleteDocument = (req, res) => {
       if (err) {
         return res.status(500).json({ message: "Failed to delete document" });
       }
+
+      // Remove subject folder if no documents remain.
+      fs.readdir(uploadPath, (readErr, remainingFiles) => {
+        if (!readErr && remainingFiles.length === 0) {
+          fs.rmdir(uploadPath, () => {
+            // Best effort cleanup; ignore rmdir errors.
+          });
+        }
+      });
+
       res.status(200).json({ message: "Document deleted successfully" });
     });
   });
