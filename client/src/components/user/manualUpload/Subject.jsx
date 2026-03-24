@@ -250,6 +250,104 @@ const CountStepper = ({ label, value, onChange, min = 0, max, disabled }) => {
 };
 
 /* ─────────────────────────────────────────────
+   File Upload Card
+───────────────────────────────────────────── */
+const UploadFileCard = ({ type, file, uploading, uploadStatus, onFileChange, onFileUpload, disabled, fileInputId }) => {
+  const isUploadSuccess = uploadStatus?.success === true;
+  const isUploadError = uploadStatus?.success === false;
+  
+  const typeInfo = {
+    syllabus: { icon: '📄', title: 'Syllabus Copy', color: 'from-blue-500 to-blue-600' },
+    modelQP: { icon: '❓', title: 'Model Question Paper', color: 'from-purple-500 to-purple-600' }
+  };
+  
+  const info = typeInfo[type];
+
+  return (
+    <div className={`bg-gradient-to-br from-sky-50/80 to-emerald-50/40 border-2 rounded-xl p-4 transition-all ${disabled ? 'opacity-70' : ''} ${
+      isUploadSuccess
+        ? 'border-emerald-400/50 bg-emerald-50/50'
+        : isUploadError
+        ? 'border-rose-400/50 bg-rose-50/50'
+        : 'border-[#00c9a7]/20'
+    }`}>
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${info.color} flex items-center justify-center text-white text-xl shadow-[0_4px_10px_rgba(0,0,0,0.15)]`}>
+            {info.icon}
+          </div>
+          <div>
+            <h4 className="text-[13px] font-bold text-[#1a2e4a] font-[Syne,sans-serif]">{info.title}</h4>
+            <p className="text-[10px] text-[#6b85a3] mt-0.5">Upload PDF or Word document</p>
+          </div>
+        </div>
+        {isUploadSuccess && (
+          <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-300 font-[Syne,sans-serif]">
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+            </svg>
+            Uploaded
+          </span>
+        )}
+      </div>
+
+      {file && !isUploadSuccess && (
+        <div className="mb-3 px-3 py-2 bg-[#00c9a7]/10 border border-[#00c9a7]/30 rounded-lg">
+          <p className="text-[11px] font-semibold text-[#00a98c] font-[DM_Sans,sans-serif] truncate">
+            {file.name}
+          </p>
+        </div>
+      )}
+
+      {uploadStatus && (
+        <div className={`mb-3 px-3 py-2 rounded-lg border text-[10px] font-[DM_Sans,sans-serif] ${
+          isUploadSuccess
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+            : 'bg-rose-50 border-rose-200 text-rose-700'
+        }`}>
+          {uploadStatus.message}
+        </div>
+      )}
+
+      {!isUploadSuccess && (
+        <div className="flex gap-2">
+          <label className="flex-1">
+            <input
+              id={fileInputId}
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={(e) => onFileChange(type, e)}
+              disabled={disabled || uploading}
+              className="hidden"
+            />
+            <span className={`flex items-center justify-center gap-2 px-4 py-2.5 bg-sky-50 border border-[#00c9a7]/25 rounded-lg cursor-pointer transition-all hover:border-[#00c9a7]/50 text-[12px] font-semibold text-[#1a2e4a] font-[Syne,sans-serif] ${
+              disabled || uploading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}>
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Choose File
+            </span>
+          </label>
+          {file && (
+            <button
+              type="button"
+              onClick={() => onFileUpload(type)}
+              disabled={disabled || uploading}
+              className={`flex-1 px-4 py-2.5 bg-gradient-to-r from-[#00c9a7] to-[#00a98c] rounded-lg text-white font-semibold text-[12px] transition-all shadow-[0_4px_12px_rgba(0,201,167,0.3)] hover:shadow-[0_6px_20px_rgba(0,201,167,0.4)] hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed font-[Syne,sans-serif] ${
+                uploading ? 'animate-pulse' : ''
+              }`}
+            >
+              {uploading ? 'Uploading...' : 'Upload'}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────
    Internal Examiner Card
 ───────────────────────────────────────────── */
 const InternalExaminerCard = ({ index, data, onChange, subjectId, internalExaminers, disabled }) => {
@@ -417,6 +515,13 @@ const Subject = ({ index, onChange }) => {
   // Toast notifications
   const [toasts, setToasts] = useState([]);
 
+  // File upload states (for when verification is "No")
+  const [syllabusFile, setSyllabusFile] = useState(null);
+  const [modelQPFile, setModelQPFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState({ syllabus: null, modelQP: null });
+  const [formValidation, setFormValidation] = useState({ isValid: true, errors: [] });
+
   const showToast = (message, type = 'success') => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
@@ -424,6 +529,126 @@ const Subject = ({ index, onChange }) => {
       setToasts(prev => prev.filter(toast => toast.id !== id));
     }, 4000);
   };
+
+  // File upload handlers
+  const handleFileChange = (type, e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (type === "syllabus") {
+        setSyllabusFile(file);
+        setUploadStatus(prev => ({ ...prev, syllabus: null }));
+      } else if (type === "modelQP") {
+        setModelQPFile(file);
+        setUploadStatus(prev => ({ ...prev, modelQP: null }));
+      }
+    }
+  };
+
+  const handleFileUpload = async (type) => {
+    if (!subjectCode) {
+      showToast("Please select a subject code first", 'error');
+      return;
+    }
+
+    const file = type === "syllabus" ? syllabusFile : modelQPFile;
+    if (!file) {
+      showToast(`Please select a ${type} file to upload`, 'error');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("subjectCode", subjectCode);
+    formData.append("subjectName", subjectName);
+    formData.append("semester", semester);
+    formData.append("documentType", type);
+
+    setUploading(true);
+    try {
+      const response = await axios.post(`${BACKEND_URL}/api/documents/upload`, formData, {
+        headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+
+      setUploadStatus(prev => ({
+        ...prev,
+        [type]: { success: true, message: response.data.message }
+      }));
+
+      showToast(response.data.message || 'File uploaded successfully', 'success');
+
+      // Clear file input
+      if (type === "syllabus") {
+        setSyllabusFile(null);
+      } else {
+        setModelQPFile(null);
+      }
+
+      // Reset file input
+      const fileInput = document.getElementById(`${type}-file-input-${id}`);
+      if (fileInput) fileInput.value = "";
+
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || "Upload failed";
+      setUploadStatus(prev => ({
+        ...prev,
+        [type]: { success: false, message: errorMsg }
+      }));
+      showToast(errorMsg, 'error');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Validation function to check if form is valid for submission
+  const validateForm = () => {
+    const errors = [];
+    
+    // Check required fields
+    if (!subjectCode) errors.push("Subject code is required");
+    if (!subjectName) errors.push("Subject name is required");
+    if (!semester) errors.push("Semester is required");
+    if (!studentsEnrolled) errors.push("Number of students enrolled is required");
+    
+    // Check examiners
+    const allInternalsSelected = internals.every(e => e.name);
+    if (!allInternalsSelected) errors.push("All internal examiners must be selected");
+    
+    const allExternalsValid = externals.every(e => e.name && e.email && e.contact && e.yearsOfExperience && e.address);
+    if (!allExternalsValid) errors.push("All external examiner details must be filled");
+    
+    // Check file uploads when verification is "No"
+    if (verification === "No") {
+      // Check if files have been successfully uploaded (uploadStatus shows success)
+      if (!uploadStatus.syllabus?.success) errors.push("Syllabus copy must be uploaded before submitting");
+      if (!uploadStatus.modelQP?.success) errors.push("Model Question Paper must be uploaded before submitting");
+    }
+    
+    // Check existing subject code when verification is "Yes"
+    if (verification === "Yes" && !existingSubjectCode) {
+      errors.push("Existing subject code is required when using previous year's question paper");
+    }
+    
+    const isValid = errors.length === 0;
+    setFormValidation({ isValid, errors });
+    return isValid;
+  };
+
+  // Expose validation function through window object so parent can call it
+  useEffect(() => {
+    window[`validateForm_${id}`] = validateForm;
+    return () => delete window[`validateForm_${id}`];
+  }, [id, subjectCode, subjectName, semester, studentsEnrolled, internals, externals, verification, existingSubjectCode, uploadStatus]);
+
+  // Reset files and form validation when verification changes
+  useEffect(() => {
+    if (verification === "Yes") {
+      // Clear file uploads when switching to "Yes"
+      setSyllabusFile(null);
+      setModelQPFile(null);
+      setUploadStatus({ syllabus: null, modelQP: null });
+    }
+    setFormValidation({ isValid: true, errors: [] });
+  }, [verification]);
 
   // Check for duplicate external examiner (by name + phone composite key)
   const checkExternalExaminerDuplicate = async (name, contact) => {
@@ -692,9 +917,22 @@ const Subject = ({ index, onChange }) => {
   // Lift state up to App whenever anything changes
   useEffect(() => {
     if (onChange) {
-      onChange(index, { subjectName, subjectCode, semester, studentsEnrolled, verification, existingSubjectCode, internals, externals, isDataLocked });
+      onChange(index, { 
+        subjectName, 
+        subjectCode, 
+        semester, 
+        studentsEnrolled, 
+        verification, 
+        existingSubjectCode, 
+        internals, 
+        externals, 
+        isDataLocked,
+        uploadStatus,
+        isFormValid: formValidation.isValid,
+        validateForm
+      });
     }
-  }, [subjectName, subjectCode, semester, studentsEnrolled, verification, existingSubjectCode, internals, externals, isDataLocked]);
+  }, [subjectName, subjectCode, semester, studentsEnrolled, verification, existingSubjectCode, internals, externals, isDataLocked, uploadStatus, formValidation]);
 
   const semesterLabels = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
 
@@ -914,6 +1152,75 @@ const Subject = ({ index, onChange }) => {
               disabled={isDataLocked || !selectedSemester || !subjectCode}
             />
           </div>
+
+          {/* File Upload Section - Shows when verification is No */}
+          {verification === "No" && (
+            <div className="mb-5">
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00c9a7] to-[#00a98c] flex items-center justify-center text-white text-sm shadow-[0_4px_10px_rgba(0,201,167,0.3)] shrink-0">
+                    📦
+                  </div>
+                  <h3 className="text-[13px] font-bold text-[#1a2e4a] font-[Syne,sans-serif]">
+                    Document Upload Required
+                  </h3>
+                  <span className="text-[10px] font-bold tracking-widest uppercase bg-[#00c9a7]/10 border border-[#00c9a7]/30 text-[#00a98c] px-2 py-0.5 rounded-full font-[Syne,sans-serif]">
+                    Required
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#6b85a3] font-[DM_Sans,sans-serif] mb-3">
+                  Since you are not using an existing question paper, please upload both syllabus and model question paper for this subject. Both files will be validated to ensure they contain the correct subject code.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <UploadFileCard
+                  type="syllabus"
+                  file={syllabusFile}
+                  uploading={uploading}
+                  uploadStatus={uploadStatus.syllabus}
+                  onFileChange={handleFileChange}
+                  onFileUpload={handleFileUpload}
+                  disabled={isDataLocked || !selectedSemester || !subjectCode}
+                  fileInputId={`syllabus-file-input-${id}`}
+                />
+                <UploadFileCard
+                  type="modelQP"
+                  file={modelQPFile}
+                  uploading={uploading}
+                  uploadStatus={uploadStatus.modelQP}
+                  onFileChange={handleFileChange}
+                  onFileUpload={handleFileUpload}
+                  disabled={isDataLocked || !selectedSemester || !subjectCode}
+                  fileInputId={`modelQP-file-input-${id}`}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Validation Errors Display */}
+          {!formValidation.isValid && formValidation.errors.length > 0 && (
+            <div className="mb-5 bg-gradient-to-r from-rose-50 to-orange-50 border-2 border-rose-300 rounded-xl p-4 shadow-[0_4px_16px_rgba(244,63,94,0.15)]">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-orange-600 flex items-center justify-center text-white text-sm shadow-[0_4px_10px_rgba(244,63,94,0.3)] shrink-0 mt-0.5">
+                  ⚠️
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-[12px] font-bold text-rose-900 mb-2 font-[Syne,sans-serif]">
+                    Form Validation Errors
+                  </h4>
+                  <ul className="space-y-1">
+                    {formValidation.errors.map((error, idx) => (
+                      <li key={idx} className="text-[11px] text-rose-800 font-[DM_Sans,sans-serif] flex items-start gap-2">
+                        <span className="mt-1">•</span>
+                        <span>{error}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Existing Subject Code Field - Shows when verification is Yes */}
           {verification === "Yes" && (

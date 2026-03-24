@@ -85,6 +85,25 @@ const Hero = ({ setActiveTab }) => {
       return;
     }
 
+    // Validate file uploads when verification is "No"
+    const fileUploadErrors = [];
+    subjectsArray.forEach((subject, idx) => {
+      if (subject.verification === "No") {
+        // Check if files have been successfully uploaded
+        if (!subject.uploadStatus?.syllabus?.success) {
+          fileUploadErrors.push(`Subject #${idx + 1}: Syllabus copy must be uploaded (successful upload required)`);
+        }
+        if (!subject.uploadStatus?.modelQP?.success) {
+          fileUploadErrors.push(`Subject #${idx + 1}: Model Question Paper must be uploaded (successful upload required)`);
+        }
+      }
+    });
+
+    if (fileUploadErrors.length > 0) {
+      alert(`📄 Document Upload Requirements Not Met:\n\n${fileUploadErrors.join('\n')}\n\nBoth syllabus and model question paper must be successfully uploaded before submitting.`);
+      return;
+    }
+
     // Show confirmation modal
     setShowConfirmModal(true);
   };
