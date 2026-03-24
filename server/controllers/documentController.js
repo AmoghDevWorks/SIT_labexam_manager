@@ -1,6 +1,7 @@
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const { validateDocumentSubjectCode } = require("../services/modelQpValidationService");
 
 // Configure multer storage - upload to temp directory first
 const storage = multer.diskStorage({
@@ -22,16 +23,30 @@ const storage = multer.diskStorage({
   }
 });
 
-// File filter to accept only PDF and Word documents
+const allowedExtensions = new Set([".pdf", ".doc", ".docx"]);
+const allowedMimeTypes = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+]);
+
+const removeTempFile = (filePath) => {
+  if (!filePath) return;
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+  }
+};
+
+// File filter to accept only PDF and Word documents.
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /pdf|doc|docx/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
+  const extension = path.extname(file.originalname).toLowerCase();
+  const isAllowedExtension = allowedExtensions.has(extension);
+  const isAllowedMime = allowedMimeTypes.has(file.mimetype);
   
-  if (extname && mimetype) {
+  if (isAllowedExtension && isAllowedMime) {
     return cb(null, true);
   } else {
-    cb(new Error("Only PDF and Word documents are allowed"));
+    cb(new Error("Only PDF and Word files are allowed"));
   }
 };
 
@@ -44,7 +59,7 @@ const upload = multer({
 
 // Upload document controller
 exports.uploadDocument = (req, res) => {
-  upload(req, res, (err) => {
+  upload(req, res, async (err) => {
     if (err instanceof multer.MulterError) {
       return res.status(400).json({ message: `Upload error: ${err.message}` });
     } else if (err) {
@@ -59,8 +74,31 @@ exports.uploadDocument = (req, res) => {
 
     if (!semester || !subjectCode || !subjectName || !documentType) {
       // Delete temp file if validation fails
-      fs.unlinkSync(req.file.path);
+      removeTempFile(req.file.path);
       return res.status(400).json({ message: "Missing required fields: semester, subjectCode, subjectName, or documentType" });
+    }
+
+    if (!["syllabus", "modelQP"].includes(documentType)) {
+      removeTempFile(req.file.path);
+      return res.status(400).json({ message: "Invalid document type. Use 'syllabus' or 'modelQP'." });
+    }
+
+    // Enforce OCR/text verification of subject code for both syllabus and model QP uploads.
+    try {
+      const validation = await validateDocumentSubjectCode({
+        filePath: req.file.path,
+        subjectCode,
+        documentType,
+      });
+
+      if (!validation.isValid) {
+        removeTempFile(req.file.path);
+        return res.status(400).json({ message: validation.message });
+      }
+    } catch (validationError) {
+      console.error("Document validation failed:", validationError.message);
+      removeTempFile(req.file.path);
+      return res.status(500).json({ message: "Failed to validate uploaded document content" });
     }
 
     // Create final directory structure: uploads/semester_X/subjectCode/
@@ -86,7 +124,7 @@ exports.uploadDocument = (req, res) => {
             return res.status(500).json({ message: "Failed to save document" });
           }
           // Delete temp file after copying
-          fs.unlinkSync(req.file.path);
+          removeTempFile(req.file.path);
           
           res.status(200).json({
             message: `${documentType === 'syllabus' ? 'Syllabus' : 'Model Question Paper'} uploaded successfully`,
