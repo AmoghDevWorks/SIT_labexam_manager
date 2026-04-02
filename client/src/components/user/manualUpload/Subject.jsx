@@ -293,7 +293,7 @@ const UploadFileCard = ({ type, file, uploading, uploadStatus, onFileChange, onF
 
       {file && !isUploadSuccess && (
         <div className="mb-3 px-3 py-2 bg-[#00c9a7]/10 border border-[#00c9a7]/30 rounded-lg">
-          <p className="text-[11px] font-semibold text-[#00a98c] font-[DM_Sans,sans-serif] truncate">
+          <p className="text-[11px] font-semibold text-[#00a98c] truncate">
             {file.name}
           </p>
         </div>
@@ -520,6 +520,8 @@ const Subject = ({ index, onChange }) => {
   const [modelQPFile, setModelQPFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState({ syllabus: null, modelQP: null });
+  const [existingDocs, setExistingDocs] = useState({ syllabus: null, modelQP: null });
+  const [checkingExistingDocs, setCheckingExistingDocs] = useState(false);
   const [formValidation, setFormValidation] = useState({ isValid: true, errors: [] });
 
   const showToast = (message, type = 'success') => {
@@ -617,10 +619,12 @@ const Subject = ({ index, onChange }) => {
     if (!allExternalsValid) errors.push("All external examiner details must be filled");
     
     // Check file uploads when verification is "No"
-    if (verification === "No") {
-      // Check if files have been successfully uploaded (uploadStatus shows success)
-      if (!uploadStatus.syllabus?.success) errors.push("Syllabus copy must be uploaded before submitting");
-      if (!uploadStatus.modelQP?.success) errors.push("Model Question Paper must be uploaded before submitting");
+    if (verification === "No" && !checkingExistingDocs) {
+      const hasSyllabus = Boolean(uploadStatus.syllabus?.success || existingDocs.syllabus);
+      const hasModelQP = Boolean(uploadStatus.modelQP?.success || existingDocs.modelQP);
+
+      if (!hasSyllabus) errors.push("Syllabus copy must be uploaded before submitting");
+      if (!hasModelQP) errors.push("Model Question Paper must be uploaded before submitting");
     }
     
     // Check existing subject code when verification is "Yes"
@@ -637,7 +641,7 @@ const Subject = ({ index, onChange }) => {
   useEffect(() => {
     window[`validateForm_${id}`] = validateForm;
     return () => delete window[`validateForm_${id}`];
-  }, [id, subjectCode, subjectName, semester, studentsEnrolled, internals, externals, verification, existingSubjectCode, uploadStatus]);
+  }, [id, subjectCode, subjectName, semester, studentsEnrolled, internals, externals, verification, existingSubjectCode, uploadStatus, existingDocs, checkingExistingDocs]);
 
   // Reset files and form validation when verification changes
   useEffect(() => {
@@ -649,6 +653,34 @@ const Subject = ({ index, onChange }) => {
     }
     setFormValidation({ isValid: true, errors: [] });
   }, [verification]);
+
+  // Check already uploaded documents for selected semester + subject.
+  useEffect(() => {
+    const fetchExistingDocuments = async () => {
+      if (!semester || !subjectCode || verification !== "No") {
+        setExistingDocs({ syllabus: null, modelQP: null });
+        return;
+      }
+
+      setCheckingExistingDocs(true);
+      try {
+        const response = await axios.get(
+          `${BACKEND_URL}/api/documents/check/${encodeURIComponent(semester)}/${encodeURIComponent(subjectCode)}`
+        );
+        setExistingDocs({
+          syllabus: response.data?.syllabus || null,
+          modelQP: response.data?.modelQP || null,
+        });
+      } catch (error) {
+        console.error("Error checking existing documents:", error);
+        setExistingDocs({ syllabus: null, modelQP: null });
+      } finally {
+        setCheckingExistingDocs(false);
+      }
+    };
+
+    fetchExistingDocuments();
+  }, [semester, subjectCode, verification]);
 
   // Check for duplicate external examiner (by name + phone composite key)
   const checkExternalExaminerDuplicate = async (name, contact) => {
@@ -895,6 +927,8 @@ const Subject = ({ index, onChange }) => {
       setExternals([blankExternal()]);
       setIsDataLocked(false);
       setExistingData(null);
+      setExistingDocs({ syllabus: null, modelQP: null });
+      setUploadStatus({ syllabus: null, modelQP: null });
     }
   }, [selectedSemester]);
 
@@ -910,6 +944,8 @@ const Subject = ({ index, onChange }) => {
       setExternalCount("1");
       setInternals([blankInternal()]);
       setExternals([blankExternal()]);
+      setExistingDocs({ syllabus: null, modelQP: null });
+      setUploadStatus({ syllabus: null, modelQP: null });
     }
     prevSubjectRef.current = subjectCode;
   }, [subjectCode]);
@@ -928,13 +964,19 @@ const Subject = ({ index, onChange }) => {
         externals, 
         isDataLocked,
         uploadStatus,
+        existingDocs,
+        checkingExistingDocs,
+        hasRequiredDocuments: Boolean((uploadStatus.syllabus?.success || existingDocs.syllabus) && (uploadStatus.modelQP?.success || existingDocs.modelQP)),
         isFormValid: formValidation.isValid,
         validateForm
       });
     }
-  }, [subjectName, subjectCode, semester, studentsEnrolled, verification, existingSubjectCode, internals, externals, isDataLocked, uploadStatus, formValidation]);
+  }, [subjectName, subjectCode, semester, studentsEnrolled, verification, existingSubjectCode, internals, externals, isDataLocked, uploadStatus, existingDocs, checkingExistingDocs, formValidation]);
 
   const semesterLabels = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
+  const hasExistingSyllabus = Boolean(existingDocs.syllabus);
+  const hasExistingModelQP = Boolean(existingDocs.modelQP);
+  const allRequiredDocsAlreadyPresent = hasExistingSyllabus && hasExistingModelQP;
 
   return (
     <>
@@ -1162,39 +1204,68 @@ const Subject = ({ index, onChange }) => {
                     📦
                   </div>
                   <h3 className="text-[13px] font-bold text-[#1a2e4a] font-[Syne,sans-serif]">
-                    Document Upload Required
+                    {allRequiredDocsAlreadyPresent ? 'Documents Already Available' : 'Document Upload Required'}
                   </h3>
-                  <span className="text-[10px] font-bold tracking-widest uppercase bg-[#00c9a7]/10 border border-[#00c9a7]/30 text-[#00a98c] px-2 py-0.5 rounded-full font-[Syne,sans-serif]">
-                    Required
-                  </span>
+                  {!allRequiredDocsAlreadyPresent && (
+                    <span className="text-[10px] font-bold tracking-widest uppercase bg-[#00c9a7]/10 border border-[#00c9a7]/30 text-[#00a98c] px-2 py-0.5 rounded-full font-[Syne,sans-serif]">
+                      Required
+                    </span>
+                  )}
                 </div>
-                <p className="text-[11px] text-[#6b85a3] font-[DM_Sans,sans-serif] mb-3">
-                  Since you are not using an existing question paper, please upload both syllabus and model question paper for this subject. Both files will be validated to ensure they contain the correct subject code.
-                </p>
+                {checkingExistingDocs ? (
+                  <p className="text-[11px] text-[#6b85a3] font-[DM_Sans,sans-serif] mb-3">
+                    Checking if documents are already uploaded for this subject...
+                  </p>
+                ) : allRequiredDocsAlreadyPresent ? (
+                  <p className="text-[11px] text-emerald-700 font-[DM_Sans,sans-serif] mb-3">
+                    Syllabus and Model Question Paper are already present on server for this subject and semester. Upload is not required.
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-[#6b85a3] font-[DM_Sans,sans-serif] mb-3">
+                    Missing documents only: upload the required file(s). Already available files are automatically considered.
+                  </p>
+                )}
+
+                {!checkingExistingDocs && (hasExistingSyllabus || hasExistingModelQP) && (
+                  <div className="mb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className={`px-3 py-2 rounded-lg text-[11px] font-semibold border ${hasExistingSyllabus ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                      {hasExistingSyllabus ? 'Syllabus already present' : 'Syllabus missing'}
+                    </div>
+                    <div className={`px-3 py-2 rounded-lg text-[11px] font-semibold border ${hasExistingModelQP ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                      {hasExistingModelQP ? 'Model QP already present' : 'Model QP missing'}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <UploadFileCard
-                  type="syllabus"
-                  file={syllabusFile}
-                  uploading={uploading}
-                  uploadStatus={uploadStatus.syllabus}
-                  onFileChange={handleFileChange}
-                  onFileUpload={handleFileUpload}
-                  disabled={isDataLocked || !selectedSemester || !subjectCode}
-                  fileInputId={`syllabus-file-input-${id}`}
-                />
-                <UploadFileCard
-                  type="modelQP"
-                  file={modelQPFile}
-                  uploading={uploading}
-                  uploadStatus={uploadStatus.modelQP}
-                  onFileChange={handleFileChange}
-                  onFileUpload={handleFileUpload}
-                  disabled={isDataLocked || !selectedSemester || !subjectCode}
-                  fileInputId={`modelQP-file-input-${id}`}
-                />
-              </div>
+              {!allRequiredDocsAlreadyPresent && !checkingExistingDocs && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {!hasExistingSyllabus && (
+                    <UploadFileCard
+                      type="syllabus"
+                      file={syllabusFile}
+                      uploading={uploading}
+                      uploadStatus={uploadStatus.syllabus}
+                      onFileChange={handleFileChange}
+                      onFileUpload={handleFileUpload}
+                      disabled={isDataLocked || !selectedSemester || !subjectCode}
+                      fileInputId={`syllabus-file-input-${id}`}
+                    />
+                  )}
+                  {!hasExistingModelQP && (
+                    <UploadFileCard
+                      type="modelQP"
+                      file={modelQPFile}
+                      uploading={uploading}
+                      uploadStatus={uploadStatus.modelQP}
+                      onFileChange={handleFileChange}
+                      onFileUpload={handleFileUpload}
+                      disabled={isDataLocked || !selectedSemester || !subjectCode}
+                      fileInputId={`modelQP-file-input-${id}`}
+                    />
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -1336,19 +1407,19 @@ const Subject = ({ index, onChange }) => {
                   <div className="space-y-2">
                     <div>
                       <p className="text-[10px] font-semibold uppercase text-[#6b85a3] font-[Syne,sans-serif]">Name</p>
-                      <p className="text-sm font-semibold text-[#1a2e4a] font-[DM_Sans,sans-serif]">{duplicateWarning.examinerDetails.name}</p>
+                      <p className="text-sm font-semibold text-[#1a2e4a]">{duplicateWarning.examinerDetails.name}</p>
                     </div>
                     <div>
                       <p className="text-[10px] font-semibold uppercase text-[#6b85a3] font-[Syne,sans-serif]">Phone</p>
-                      <p className="text-sm font-semibold text-[#1a2e4a] font-[DM_Sans,sans-serif]">{duplicateWarning.examinerDetails.contact}</p>
+                      <p className="text-sm font-semibold text-[#1a2e4a]">{duplicateWarning.examinerDetails.contact}</p>
                     </div>
                     <div>
                       <p className="text-[10px] font-semibold uppercase text-[#6b85a3] font-[Syne,sans-serif]">Email</p>
-                      <p className="text-sm font-semibold text-[#1a2e4a] font-[DM_Sans,sans-serif]">{duplicateWarning.examinerDetails.email}</p>
+                      <p className="text-sm font-semibold text-[#1a2e4a]">{duplicateWarning.examinerDetails.email}</p>
                     </div>
                     <div>
                       <p className="text-[10px] font-semibold uppercase text-[#6b85a3] font-[Syne,sans-serif]">Experience</p>
-                      <p className="text-sm font-semibold text-[#1a2e4a] font-[DM_Sans,sans-serif]">{duplicateWarning.examinerDetails.yearsOfExperience} years</p>
+                      <p className="text-sm font-semibold text-[#1a2e4a]">{duplicateWarning.examinerDetails.yearsOfExperience} years</p>
                     </div>
                   </div>
                 </div>
@@ -1443,7 +1514,7 @@ const Subject = ({ index, onChange }) => {
                 )}
               </div>
               <div className="flex-1">
-                <p className="text-white font-[DM_Sans,sans-serif] text-[14px] font-medium leading-relaxed">
+                <p className="text-white text-[14px] font-medium leading-relaxed">
                   {toast.message}
                 </p>
               </div>

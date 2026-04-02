@@ -89,18 +89,25 @@ const Hero = ({ setActiveTab }) => {
     const fileUploadErrors = [];
     subjectsArray.forEach((subject, idx) => {
       if (subject.verification === "No") {
-        // Check if files have been successfully uploaded
-        if (!subject.uploadStatus?.syllabus?.success) {
-          fileUploadErrors.push(`Subject #${idx + 1}: Syllabus copy must be uploaded (successful upload required)`);
+        if (subject.checkingExistingDocs) {
+          fileUploadErrors.push(`Subject #${idx + 1}: Please wait, checking existing uploaded documents...`);
+          return;
         }
-        if (!subject.uploadStatus?.modelQP?.success) {
-          fileUploadErrors.push(`Subject #${idx + 1}: Model Question Paper must be uploaded (successful upload required)`);
+
+        const hasSyllabus = Boolean(subject.uploadStatus?.syllabus?.success || subject.existingDocs?.syllabus);
+        const hasModelQP = Boolean(subject.uploadStatus?.modelQP?.success || subject.existingDocs?.modelQP);
+
+        if (!hasSyllabus) {
+          fileUploadErrors.push(`Subject #${idx + 1}: Syllabus copy is required`);
+        }
+        if (!hasModelQP) {
+          fileUploadErrors.push(`Subject #${idx + 1}: Model Question Paper is required`);
         }
       }
     });
 
     if (fileUploadErrors.length > 0) {
-      alert(`📄 Document Upload Requirements Not Met:\n\n${fileUploadErrors.join('\n')}\n\nBoth syllabus and model question paper must be successfully uploaded before submitting.`);
+      alert(`📄 Document Upload Requirements Not Met:\n\n${fileUploadErrors.join('\n')}\n\nBoth syllabus and model question paper must be available (already present on server or newly uploaded) before submitting.`);
       return;
     }
 
