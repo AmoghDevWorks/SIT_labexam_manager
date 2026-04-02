@@ -83,22 +83,25 @@ exports.uploadDocument = (req, res) => {
       return res.status(400).json({ message: "Invalid document type. Use 'syllabus' or 'modelQP'." });
     }
 
-    // Enforce OCR/text verification of subject code for both syllabus and model QP uploads.
-    try {
-      const validation = await validateDocumentSubjectCode({
-        filePath: req.file.path,
-        subjectCode,
-        documentType,
-      });
+    // Enforce OCR/text verification for non-admin uploads only.
+    const isAdminUpload = req.user?.role === "admin";
+    if (!isAdminUpload) {
+      try {
+        const validation = await validateDocumentSubjectCode({
+          filePath: req.file.path,
+          subjectCode,
+          documentType,
+        });
 
-      if (!validation.isValid) {
+        if (!validation.isValid) {
+          removeTempFile(req.file.path);
+          return res.status(400).json({ message: validation.message });
+        }
+      } catch (validationError) {
+        console.error("Document validation failed:", validationError.message);
         removeTempFile(req.file.path);
-        return res.status(400).json({ message: validation.message });
+        return res.status(500).json({ message: "Failed to validate uploaded document content" });
       }
-    } catch (validationError) {
-      console.error("Document validation failed:", validationError.message);
-      removeTempFile(req.file.path);
-      return res.status(500).json({ message: "Failed to validate uploaded document content" });
     }
 
     // Create final directory structure: uploads/semester_X/subjectCode/

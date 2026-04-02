@@ -700,6 +700,376 @@ const CheckDocumentsModal = ({ subject, onClose }) => {
   );
 };
 
+const AdminUploadCard = ({ title, icon, file, existingFile, onFileChange, onUpload, uploading, status, inputId, acceptedFormats, semester, subjectCode, documentType }) => {
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+  const handleDownload = async () => {
+    try {
+      const response = await axios.get(
+        `${BACKEND_URL}/api/documents/${semester}/${subjectCode}/${documentType}`,
+        { responseType: 'blob' }
+      );
+
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = existingFile?.filename || `document_${documentType}.pdf`;
+
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?(.+?)"?$/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      alert('Failed to download document. Please try again.');
+    }
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  return (
+    <div className="bg-white/85 backdrop-blur-md border border-[#00c9a7]/20 rounded-2xl shadow-[0_8px_32px_rgba(15,31,61,0.1)] overflow-hidden">
+      <div className="h-1 w-full bg-gradient-to-r from-[#00c9a7] to-[#00a98c]" />
+
+      <div className="p-6">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00c9a7] to-[#00a98c] flex items-center justify-center text-white text-xl shadow-[0_4px_10px_rgba(0,201,167,0.3)] shrink-0">
+            {icon}
+          </div>
+          <div>
+            <h3 className="text-[14px] font-bold text-[#1a2e4a] font-[Syne,sans-serif]">{title}</h3>
+            <p className="text-[11px] text-[#6b85a3] font-[DM_Sans,sans-serif]">Upload PDF or Word document</p>
+          </div>
+        </div>
+
+        {existingFile && (
+          <div className="mb-4 p-3 bg-emerald-50/80 border border-emerald-200/60 rounded-xl">
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-semibold text-emerald-800 truncate font-[Syne,sans-serif]">Current File</p>
+                  <p className="text-[10px] text-emerald-600 font-[DM_Sans,sans-serif]">
+                    {formatFileSize(existingFile.size)} • {formatDate(existingFile.uploadedAt)}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleDownload}
+                className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold text-emerald-700 bg-white border border-emerald-300 rounded-lg hover:bg-emerald-50 transition-colors font-[Syne,sans-serif] shrink-0"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download
+              </button>
+            </div>
+            <p className="text-[10px] text-emerald-700 italic font-[DM_Sans,sans-serif]">
+              Upload a new file to replace this one
+            </p>
+          </div>
+        )}
+
+        <div className="mb-4">
+          <label className="block">
+            <input
+              id={inputId}
+              type="file"
+              accept={acceptedFormats}
+              onChange={onFileChange}
+              className="hidden"
+            />
+            <div className="w-full px-4 py-6 border-2 border-dashed border-[#00c9a7]/30 rounded-xl bg-sky-50/50 hover:bg-sky-50 transition-all cursor-pointer group">
+              <div className="text-center">
+                <svg className="w-8 h-8 mx-auto mb-2 text-[#00c9a7] group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p className="text-[12px] font-semibold text-[#1a2e4a] font-[Syne,sans-serif]">
+                  Click to browse {existingFile ? 'new ' : ''}file
+                </p>
+                <p className="text-[10px] text-[#6b85a3] mt-1 font-[DM_Sans,sans-serif]">
+                  {acceptedFormats.replace(/\./g, '').toUpperCase()}
+                </p>
+              </div>
+            </div>
+          </label>
+        </div>
+
+        {file && (
+          <div className="mb-4 px-3 py-2 bg-[#00c9a7]/5 border border-[#00c9a7]/20 rounded-lg flex items-center gap-2">
+            <svg className="w-4 h-4 text-[#00c9a7] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span className="text-[11px] font-medium text-[#1a2e4a] truncate">{file.name}</span>
+            <span className="text-[10px] text-[#6b85a3] ml-auto shrink-0 font-[DM_Sans,sans-serif]">
+              {(file.size / 1024).toFixed(1)} KB
+            </span>
+          </div>
+        )}
+
+        {status && (
+          <div className={`mb-4 px-3 py-2 rounded-lg text-[11px] font-medium ${
+            status.success
+              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+              : "bg-rose-50 text-rose-700 border border-rose-200"
+          }`}>
+            {status.message}
+          </div>
+        )}
+
+        <button
+          onClick={onUpload}
+          disabled={!file || uploading}
+          className="w-full flex items-center justify-center gap-2 py-3 text-[13px] font-bold text-white bg-gradient-to-r from-[#00c9a7] to-[#00a98c] rounded-xl shadow-[0_4px_14px_rgba(0,201,167,0.35)] hover:shadow-[0_6px_20px_rgba(0,201,167,0.45)] hover:-translate-y-0.5 transition-all duration-200 font-[Syne,sans-serif] disabled:opacity-50 disabled:translate-y-0 disabled:cursor-not-allowed"
+        >
+          {uploading ? (
+            <>
+              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="3"/>
+                <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+              </svg>
+              {existingFile ? 'Re-uploading...' : 'Uploading...'}
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              {existingFile ? `Re-upload ${title}` : `Upload ${title}`}
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+/* ════════════════════════════════════════════
+   UPLOAD DOCUMENTS MODAL
+════════════════════════════════════════════ */
+const UploadDocumentsModal = ({ subject, onClose, showToast }) => {
+  const overlayRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [existingDocs, setExistingDocs] = useState({ syllabus: null, modelQP: null });
+  const [syllabusFile, setSyllabusFile] = useState(null);
+  const [modelQPFile, setModelQPFile] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState({ syllabus: null, modelQP: null });
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      try {
+        const response = await axios.get(
+          `${BACKEND_URL}/api/documents/check/${subject.semester}/${subject.code}`
+        );
+        setExistingDocs(response.data);
+      } catch (error) {
+        console.error("Error fetching existing documents:", error);
+        setExistingDocs({ syllabus: null, modelQP: null });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (subject.semester && subject.code) {
+      fetchDocuments();
+    } else {
+      setLoading(false);
+    }
+  }, [subject]);
+
+  const handleFileChange = (type, event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    if (type === "syllabus") {
+      setSyllabusFile(file);
+      setUploadStatus((prev) => ({ ...prev, syllabus: null }));
+    } else {
+      setModelQPFile(file);
+      setUploadStatus((prev) => ({ ...prev, modelQP: null }));
+    }
+  };
+
+  const refreshDocuments = async () => {
+    const response = await axios.get(
+      `${BACKEND_URL}/api/documents/check/${subject.semester}/${subject.code}`
+    );
+    setExistingDocs(response.data);
+  };
+
+  const handleUpload = async (type) => {
+    const file = type === "syllabus" ? syllabusFile : modelQPFile;
+
+    if (!file) {
+      showToast("Please choose a file first", "error");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("subjectCode", subject.code);
+    formData.append("subjectName", subject.name);
+    formData.append("semester", subject.semester);
+    formData.append("documentType", type);
+
+    setUploading(true);
+    try {
+      const response = await axios.post(`${BACKEND_URL}/api/documents/upload`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      setUploadStatus((prev) => ({
+        ...prev,
+        [type]: { success: true, message: response.data.message },
+      }));
+
+      showToast(response.data.message || "File uploaded successfully");
+
+      if (type === "syllabus") {
+        setSyllabusFile(null);
+      } else {
+        setModelQPFile(null);
+      }
+
+      await refreshDocuments();
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || "Upload failed";
+      setUploadStatus((prev) => ({
+        ...prev,
+        [type]: { success: false, message: errorMsg },
+      }));
+      showToast(errorMsg, "error");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div
+      ref={overlayRef}
+      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0f1f3d]/55 backdrop-blur-sm"
+      style={{ animation: "overlayFadeIn 0.18s ease both" }}
+    >
+      <div
+        className="relative w-full max-w-[920px] bg-white rounded-2xl shadow-[0_28px_80px_rgba(15,31,61,0.28)] overflow-hidden"
+        style={{ animation: "modalPopIn 0.28s cubic-bezier(0.34,1.56,0.64,1) both" }}
+      >
+        <div className="h-1.5 w-full bg-gradient-to-r from-[#00c9a7] via-[#00e5c4] to-[#00a98c]" />
+
+        <div className="px-7 pt-6 pb-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-[16px] font-extrabold text-[#1a2e4a] font-[Syne,sans-serif] leading-tight">
+                Upload Documents
+              </h2>
+              <p className="text-[12px] text-[#6b85a3] mt-1 font-[DM_Sans,sans-serif] truncate">
+                {subject.name} ({subject.code})
+              </p>
+              {subject.semester && (
+                <span className="inline-flex items-center mt-2 px-2.5 py-1 rounded-md bg-[#0f1f3d]/10 text-[#0f1f3d] text-[10px] font-bold tracking-wide uppercase">
+                  Semester {subject.semester}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-[#6b85a3] hover:bg-sky-100 hover:text-[#1a2e4a] transition-all duration-150 shrink-0"
+            >
+              <svg viewBox="0 0 18 18" className="w-3.5 h-3.5" fill="none">
+                <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="h-px bg-gradient-to-r from-transparent via-[#00c9a7]/20 to-transparent mx-7 mb-1" />
+
+        <div className="px-7 py-5 max-h-[72vh] overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Spinner />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <AdminUploadCard
+                title="Syllabus"
+                icon="📄"
+                file={syllabusFile}
+                existingFile={existingDocs.syllabus}
+                onFileChange={(e) => handleFileChange("syllabus", e)}
+                onUpload={() => handleUpload("syllabus")}
+                uploading={uploading}
+                status={uploadStatus.syllabus}
+                inputId={`admin-syllabus-${subject.id}`}
+                acceptedFormats=".pdf,.doc,.docx"
+                semester={subject.semester}
+                subjectCode={subject.code}
+                documentType="syllabus"
+              />
+
+              <AdminUploadCard
+                title="Model Question Paper"
+                icon="📝"
+                file={modelQPFile}
+                existingFile={existingDocs.modelQP}
+                onFileChange={(e) => handleFileChange("modelQP", e)}
+                onUpload={() => handleUpload("modelQP")}
+                uploading={uploading}
+                status={uploadStatus.modelQP}
+                inputId={`admin-modelqp-${subject.id}`}
+                acceptedFormats=".pdf,.doc,.docx"
+                semester={subject.semester}
+                subjectCode={subject.code}
+                documentType="modelQP"
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="px-7 py-4 bg-sky-50 border-t border-[#00c9a7]/10">
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 text-[13px] font-semibold text-[#6b85a3] bg-white border border-[#00c9a7]/20 rounded-xl hover:bg-sky-100 hover:text-[#1a2e4a] transition-all font-[Syne,sans-serif]"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* ════════════════════════════════════════════
    DELETE CONFIRM MODAL
 ════════════════════════════════════════════ */
@@ -771,7 +1141,7 @@ const DeleteModal = ({ subject, onClose, onConfirm, loading }) => {
 /* ════════════════════════════════════════════
    SUBJECT CARD
 ════════════════════════════════════════════ */
-const SubjectCard = ({ subject, index, onEdit, onDelete, onManageExaminers, onCheckDocuments }) => {
+const SubjectCard = ({ subject, index, onEdit, onDelete, onManageExaminers, onUploadDocuments, onCheckDocuments }) => {
   const [from, to] = CARD_ACCENTS[index % CARD_ACCENTS.length];
   const initials = (subject?.name ?? "")
   .split(/\s+/)
@@ -844,6 +1214,19 @@ const SubjectCard = ({ subject, index, onEdit, onDelete, onManageExaminers, onCh
               <path d="M2 12c0-2.5 2-4 5-4s5 1.5 5 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
             </svg>
             Manage Examiners
+          </button>
+
+          <button
+            onClick={() => onUploadDocuments(subject)}
+            className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold text-[#162847] bg-[#162847]/10 border border-[#162847]/20 rounded-lg hover:bg-[#162847]/20 transition-all font-[Syne,sans-serif]"
+            title="Upload or inspect documents"
+          >
+            <svg viewBox="0 0 14 14" className="w-3 h-3" fill="none">
+              <path d="M8.5 1.5H3.5a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V5L8.5 1.5z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+              <path d="M8.5 1.5V5h3.5" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+              <path d="M5 7h4M5 9.5h4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+            </svg>
+            Upload Documents
           </button>
           
           {/* Check Documents button - full width */}
@@ -1427,7 +1810,8 @@ const ManageSubject = () => {
                               onEdit={(s) => { setActiveSubject(s); setModal("edit"); }}
                               onDelete={(s) => { setActiveSubject(s); setModal("delete"); }}
                               onManageExaminers={(s) => { setActiveSubject(s); setModal("manage-examiners"); }}
-                              onCheckDocuments={(s) => { setActiveSubject(s); setModal("check-documents"); }}
+                                onUploadDocuments={(s) => { setActiveSubject(s); setModal("upload-documents"); }}
+                                onCheckDocuments={(s) => { setActiveSubject(s); setModal("check-documents"); }}
                             />
                           ))}
                         </div>
@@ -1488,6 +1872,15 @@ const ManageSubject = () => {
       {modal === "manage-examiners" && activeSubject && (
         <ManageExaminersModal
           subject={activeSubject}
+          onClose={() => { setModal(null); setActiveSubject(null); }}
+        />
+      )}
+
+      {/* ── Upload Documents Modal ── */}
+      {modal === "upload-documents" && activeSubject && (
+        <UploadDocumentsModal
+          subject={activeSubject}
+          showToast={showToast}
           onClose={() => { setModal(null); setActiveSubject(null); }}
         />
       )}

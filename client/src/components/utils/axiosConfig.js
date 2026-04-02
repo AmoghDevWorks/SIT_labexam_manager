@@ -7,11 +7,21 @@ import axios from 'axios';
 // Add request interceptor to include JWT token
 axios.interceptors.request.use(
   (config) => {
-    // Try to get admin token first, then user token
+    // Select token based on current route context.
     const adminToken = localStorage.getItem('adminToken');
     const userToken = localStorage.getItem('userToken');
-    
-    const token = adminToken || userToken;
+
+    const currentPath = window.location.pathname || '';
+    const isAdminRoute = currentPath.startsWith('/admin') || currentPath === '/loginAdmin';
+
+    let token = null;
+
+    // If both are present, use route-aware token to avoid role mixups.
+    if (adminToken && userToken) {
+      token = isAdminRoute ? adminToken : userToken;
+    } else {
+      token = adminToken || userToken;
+    }
     
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
